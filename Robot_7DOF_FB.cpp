@@ -9,7 +9,348 @@
 #define _USE_MATH_DEFINES // for C++
 #include <math.h>
 
+
+#include "dynamixel.h"
+
+
+#pragma comment(lib,"dynamixel.lib") 
+
 using namespace std;
+
+#if (DEBUG)
+	#define DBGMSG(x)  printf x;
+#else
+    #define DBGMSG(x)
+#endif
+
+unsigned char getMapAxisNO(unsigned char index)
+{
+	return gMapAxisNO[index];
+
+}
+
+unsigned char getMapAxisID(unsigned char index)
+{
+	return gMapAxisID[index];
+}
+
+
+int ROM_Setting() //new
+{
+	//==calculate Max torque to set in rom 
+	const short int Max_torque[MAX_AXIS_NUM]=
+	{
+		AXIS1_MAX_TORQUE,
+		AXIS2_MAX_TORQUE,
+		AXIS3_MAX_TORQUE,
+		AXIS4_MAX_TORQUE,
+		AXIS5_MAX_TORQUE,
+		AXIS6_MAX_TORQUE,
+		AXIS7_MAX_TORQUE
+	};
+
+
+	//==Calculate angle limit==//
+	const short int R2M_OFFSET_DEG[MAX_AXIS_NUM]=
+	{
+		AXIS1_R2M_OFFSET_DEG,
+		AXIS2_R2M_OFFSET_DEG,
+		AXIS3_R2M_OFFSET_DEG,
+		AXIS4_R2M_OFFSET_DEG,
+		AXIS5_R2M_OFFSET_DEG,
+		AXIS6_R2M_OFFSET_DEG,
+		AXIS7_R2M_OFFSET_DEG
+	};
+
+	const short int ROBOT_LIM_DEG_L[MAX_AXIS_NUM]=
+	{
+		AXIS1_ROBOT_LIM_DEG_L,
+		AXIS2_ROBOT_LIM_DEG_L,
+		AXIS3_ROBOT_LIM_DEG_L,
+		AXIS4_ROBOT_LIM_DEG_L,
+		AXIS5_ROBOT_LIM_DEG_L,
+		AXIS6_ROBOT_LIM_DEG_L,
+		AXIS7_ROBOT_LIM_DEG_L
+	};
+
+	const short int ROBOT_LIM_DEG_H[MAX_AXIS_NUM]=
+	{
+		AXIS1_ROBOT_LIM_DEG_H,
+		AXIS2_ROBOT_LIM_DEG_H,
+		AXIS3_ROBOT_LIM_DEG_H,
+		AXIS4_ROBOT_LIM_DEG_H,
+		AXIS5_ROBOT_LIM_DEG_H,
+		AXIS6_ROBOT_LIM_DEG_H,
+		AXIS7_ROBOT_LIM_DEG_H
+	};
+
+	unsigned short int Motor_lim_pulse_h[MAX_AXIS_NUM]={0};
+	unsigned short int Motor_lim_pulse_l[MAX_AXIS_NUM]={0};
+	
+
+	int i=0;
+	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	{
+		Motor_lim_pulse_l[i]=(unsigned short int)((ROBOT_LIM_DEG_L[i]+R2M_OFFSET_DEG[i])*DEF_RATIO_DEG_TO_PUS);
+		Motor_lim_pulse_h[i]=(unsigned short int)((ROBOT_LIM_DEG_H[i]+R2M_OFFSET_DEG[i])*DEF_RATIO_DEG_TO_PUS);
+	}
+
+	//==writing to ROM==//
+	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	{
+		//==Set MAX_torgue==//
+		dxl_write_word(gMapAxisID[i],MAX_TORQUE,Max_torque[i]);//  more safe
+	
+		//==Set angel limit==//
+		dxl_write_word(gMapAxisID[i],CW_ANGLE_LIMIT_L,Motor_lim_pulse_l[i]);
+		dxl_write_word(gMapAxisID[i],CCW_ANGLE_LIMIT_L,Motor_lim_pulse_h[i]);  
+
+		//==Set MULTITURN_OFFSET to 0==//
+		dxl_write_word(gMapAxisID[i],MULTITURN_OFFSET,0);
+	}
+	
+
+	//==read and check ==//
+	int	txrx_result=0;
+	short int max_torque=0;
+	short int cw_angel_lim=0,ccw_angle_lim=0;
+	short int multi_turn_offset=0;
+	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	{
+		printf("===AXIS_%d===\n",gMapAxisNO[i]);
+
+		//==MAX_torgue==//
+		max_torque = dxl_read_word(gMapAxisID[i], MAX_TORQUE);
+		txrx_result = dxl_get_result();
+		if(txrx_result!=COMM_RXSUCCESS)
+			printf("Failed read MAX_TORQUE error=%d\n",txrx_result);
+		else
+			printf("MAX_TORQUE=%d\n",max_torque);
+	
+		//==CW_ANGLE_LIMIT,CCW_ANGLE_LIMIT==//
+		cw_angel_lim=dxl_read_word(gMapAxisID[i],CW_ANGLE_LIMIT_L);
+		txrx_result = dxl_get_result();
+		if(txrx_result!=COMM_RXSUCCESS)
+			printf("Failed read CW_ANGLE_LIMIT error=%d\n",txrx_result);
+		else	
+			printf("CW_ANGLE_LIMIT=%d,degree=%f\n",cw_angel_lim,cw_angel_lim*DEF_RATIO_PUS_TO_DEG);
+
+		ccw_angle_lim=dxl_read_word(gMapAxisID[i],CCW_ANGLE_LIMIT_L);
+		txrx_result = dxl_get_result();
+		if(txrx_result!=COMM_RXSUCCESS)
+			printf("Failed Read CCW_ANGLE_LIMIT failed error=%d\n",txrx_result);
+		else	
+			printf("CCW_ANGLE_LIMIT=%d,degree=%f\n",ccw_angle_lim,ccw_angle_lim*DEF_RATIO_PUS_TO_DEG);
+		
+
+		//==multi turn offset==//
+		multi_turn_offset=dxl_read_word(gMapAxisID[i],MULTITURN_OFFSET);
+		txrx_result = dxl_get_result();
+		if(txrx_result!=COMM_RXSUCCESS)
+			printf("Failed Read MULTITURN_OFFSET failed error=%d\n",txrx_result);
+		else	
+			printf("MULTITURN_OFFSET=%d\n",multi_turn_offset);
+	}
+
+	return 0;
+}
+
+//rt=Read_pos(pos_pus,DEF_UNIT_PUS)
+int Read_pos(float *pos,unsigned char unit)
+{
+	int i=0;
+	short int pulse=0;
+	int rt=0;
+
+	if(unit==DEF_UNIT_RAD)
+	{
+		for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+		{
+			pulse = dxl_read_word(gMapAxisID[i], PRESENT_POS);
+			if(dxl_get_result()!=COMM_RXSUCCESS)
+			{
+				rt=-gMapAxisNO[i];
+				pos[i]=0xffff;
+			}
+			else
+			{
+				pulse-=gr2m_offset_pulse[i]; //mortor to robot offset =>minus offset
+				pos[i]=pulse*DEF_RATIO_PUS_TO_RAD;
+			}
+		}
+		
+	}
+	else if(unit==DEF_UNIT_DEG)
+	{
+		for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+		{
+			pulse = dxl_read_word(gMapAxisID[i], PRESENT_POS);
+			if(dxl_get_result()!=COMM_RXSUCCESS)
+			{
+				rt=-gMapAxisNO[i];	
+				pos[i]=0xffff;
+			}
+			else
+			{
+				pulse-=gr2m_offset_pulse[i]; 
+				pos[i]=pulse*DEF_RATIO_PUS_TO_DEG;
+			}
+		}
+	}
+	else if(unit==DEF_UNIT_PUS)
+	{
+		for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+		{
+			pulse = dxl_read_word(gMapAxisID[i], PRESENT_POS);
+			if(dxl_get_result()!=COMM_RXSUCCESS)
+			{
+				rt=-gMapAxisNO[i];
+				pos[i]=0xffff;
+			}
+			else
+			{
+				pulse-=gr2m_offset_pulse[i]; 
+				pos[i]=pulse;
+			}
+		}
+		
+	}
+	else
+	{
+		//non offset value
+		for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+		{
+			pulse = dxl_read_word(gMapAxisID[i], PRESENT_POS);
+			if(dxl_get_result()!=COMM_RXSUCCESS)
+			{
+				rt=-gMapAxisNO[i];
+				pos[i]=0xffff;
+			}
+			else
+			{
+				pos[i]=pulse;
+			}
+		}
+	}
+	
+	return rt;
+}
+
+
+
+
+int Output_to_Dynamixel(const float *Ang_rad,const unsigned short int *velocity) 
+{
+	unsigned char i=0;
+
+	//===================================================================//
+	//==limit axis  if not zero ,the return value is the overlimit axis==//
+	//===================================================================//
+	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	{
+		if( (Ang_rad[i] > grobot_lim_rad_H[i]) || (Ang_rad[i] < grobot_lim_rad_L[i]) )
+		{
+			DBGMSG(("AXIS%d over limit Ang_rad=%f,grobot_lim_rad_L=%f,grobot_lim_rad_H=%f\n",gMapAxisNO[i],Ang_rad[i],grobot_lim_rad_L[i],grobot_lim_rad_H[i]))
+			return -gMapAxisNO[i];
+		}
+	}
+
+	//===================================================//
+	//==trnasformat to pulse and offset to motor domain==//
+	//====================================================//
+	short int Ang_pulse[MAX_AXIS_NUM]={0};
+	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	{
+		Ang_pulse[i]=(short int)(Ang_rad[i]*DEF_RATIO_RAD_TO_PUS);
+		Ang_pulse[i]+=gr2m_offset_pulse[i];
+
+		if( Ang_pulse[i] > DEF_JOINT_MODE_MAX_PULSE )//  0~4095
+		{
+			DBGMSG(("AXIS%d over range of mortor  Ang_pulse=%d,JOINT_MODE_MIN_PULSE=%d,JOINT_MODE_MAX_PULSE=%d\n",gMapAxisNO[i],Ang_pulse[i],DEF_JOINT_MODE_MIN_PULSE,DEF_JOINT_MODE_MAX_PULSE))
+			return -gMapAxisNO[i];
+		}
+	}
+
+	//================================//
+	//==output to motor by syncpage===//
+	//===============================//
+	unsigned short int SyncPage1[21]=
+	{ 
+		ID_AXIS1,(unsigned short int)Ang_pulse[Index_AXIS1],velocity[Index_AXIS1], //ID,goal,velocity
+		ID_AXIS2,(unsigned short int)Ang_pulse[Index_AXIS2],velocity[Index_AXIS2], 
+		ID_AXIS3,(unsigned short int)Ang_pulse[Index_AXIS3],velocity[Index_AXIS3], 
+		ID_AXIS4,(unsigned short int)Ang_pulse[Index_AXIS4],velocity[Index_AXIS4], 
+		ID_AXIS5,(unsigned short int)Ang_pulse[Index_AXIS5],velocity[Index_AXIS5], 
+		ID_AXIS6,(unsigned short int)Ang_pulse[Index_AXIS6],velocity[Index_AXIS6], 
+		ID_AXIS7,(unsigned short int)Ang_pulse[Index_AXIS7],velocity[Index_AXIS7], 
+	};
+
+	
+#if (DEBUG)
+	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+		printf("syncwrite AXIS%d pos=%d velocity=%d\n",gMapAxisNO[i],Ang_pulse[i],velocity[i]);
+#endif
+
+	syncWrite_x86(GOAL_POSITION,2,SyncPage1,21);//byte syncWrite(byte start_addr, byte num_of_data, int *param, int array_length);
+  
+	return 0;
+}
+
+int Output_to_Dynamixel_pulse(const unsigned short int *Ang_pulse,const unsigned short int *velocity) 
+{
+	unsigned char i=0;
+
+	//===================================================================//
+	//==limit axis  if not zero ,the return value is the overlimit axis==//
+	//===================================================================//
+	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	{
+		if( (Ang_pulse[i] > grobot_lim_pus_H[i]) || (Ang_pulse[i] < grobot_lim_pus_L[i]) )
+		{
+			DBGMSG(("AXIS%d over limit Ang_pus=%d,grobot_lim_pus_L=%d,grobot_lim_pus_H=%d\n",gMapAxisNO[i],Ang_pulse[i],grobot_lim_pus_L[i],grobot_lim_pus_H[i]))
+			return -gMapAxisNO[i];
+		}
+	}
+
+	//====================================================//
+	//==trnasformat to pulse and offset to motor domain===//
+	//====================================================//
+	unsigned short int Ang_pulse_with_offset[MAX_AXIS_NUM]={0};
+	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	{
+		Ang_pulse_with_offset[i]=Ang_pulse[i]+gr2m_offset_pulse[i];
+
+		if( Ang_pulse_with_offset[i] > DEF_JOINT_MODE_MAX_PULSE )//  0~4095
+		{
+			DBGMSG(("AXIS%d over range of mortor  Ang_pulse=%d,JOINT_MODE_MIN_PULSE=%d,JOINT_MODE_MAX_PULSE=%d\n",gMapAxisNO[i],Ang_pulse_with_offset[i],DEF_JOINT_MODE_MIN_PULSE,DEF_JOINT_MODE_MAX_PULSE))
+			return -gMapAxisNO[i];
+		}
+	}
+
+	//================================//
+	//==output to motor by syncpage===//
+	//===============================//
+	unsigned short int SyncPage1[21]=
+	{ 
+		ID_AXIS1,Ang_pulse_with_offset[Index_AXIS1],velocity[Index_AXIS1], //ID,goal,velocity
+		ID_AXIS2,Ang_pulse_with_offset[Index_AXIS2],velocity[Index_AXIS2], 
+		ID_AXIS3,Ang_pulse_with_offset[Index_AXIS3],velocity[Index_AXIS3], 
+		ID_AXIS4,Ang_pulse_with_offset[Index_AXIS4],velocity[Index_AXIS4], 
+		ID_AXIS5,Ang_pulse_with_offset[Index_AXIS5],velocity[Index_AXIS5], 
+		ID_AXIS6,Ang_pulse_with_offset[Index_AXIS6],velocity[Index_AXIS6], 
+		ID_AXIS7,Ang_pulse_with_offset[Index_AXIS7],velocity[Index_AXIS7], 
+	};
+
+	
+#if (DEBUG)
+	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+		printf("syncwrite AXIS%d pos=%d velocity=%d\n",gMapAxisNO[i],Ang_pulse[i],velocity[i]);
+#endif
+
+	syncWrite_x86(GOAL_POSITION,2,SyncPage1,21);//byte syncWrite(byte start_addr, byte num_of_data, int *param, int array_length);
+  
+	return 0;
+}
 
 //歐拉 Z1X2Y3 Intrinsic Rotaions相對於當前坐標系的的旋轉
 Matrix R_z1x2y3(float alpha,float beta,float gamma)
@@ -58,7 +399,7 @@ int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_bas
 	int i=0;
 	
 	//Out put initial to zero
-	for(i=AXIS1;i<AXIS7;i++)
+	for(i=Index_AXIS1;i<=Index_AXIS7;i++)
 	{
 		theta[i]=0;
 	}
@@ -88,7 +429,7 @@ int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_bas
 	V_r_wst=V_r_end-V_r_h;	
 
 	//theat 4
-	theta[AXIS4]=-(float)(M_PI-acos((pow(l1,2)+pow(l2,2)-pow(norm(V_r_wst),2))/(2*l1*l2)));
+	theta[Index_AXIS4]=-(float)(M_PI-acos((pow(l1,2)+pow(l2,2)-pow(norm(V_r_wst),2))/(2*l1*l2)));
 
 
 	Matrix V_r_m(3,1);
@@ -135,19 +476,19 @@ int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_bas
 	Matrix V_r_u(3,1);
 	V_r_u=V_r_m+V_R_u;
 
-	theta[AXIS1]=atan2(-V_r_u(1,1),-V_r_u(3,1));//theta(1)=atan2(-V_r_u(1),-V_r_u(3));
+	theta[Index_AXIS1]=atan2(-V_r_u(1,1),-V_r_u(3,1));//theta(1)=atan2(-V_r_u(1),-V_r_u(3));
 
 
-	if (theta[AXIS1] !=0) 
-		theta[AXIS2]=atan2(V_r_u(2,1),-V_r_u(1,1)/sin(theta[AXIS1]));
+	if (theta[Index_AXIS1] !=0) 
+		theta[Index_AXIS2]=atan2(V_r_u(2,1),-V_r_u(1,1)/sin(theta[Index_AXIS1]));
 	else
-		theta[AXIS2]=atan2(-V_r_u(2,1),V_r_u(3,1));
+		theta[Index_AXIS2]=atan2(-V_r_u(2,1),V_r_u(3,1));
 	
 
 
 	//theat 3
 	//theta(3)=atan2( sin(theta(2))*sin(theta(1))*V_r_wst(1)+cos(theta(2))*V_r_wst(2)+sin(theta(2))*cos(theta(1))*V_r_wst(3),cos(theta(1))*V_r_wst(1)-sin(theta(1))*V_r_wst(3));
-	theta[AXIS3]=atan2( sin(theta[AXIS2])*sin(theta[AXIS1])*V_r_wst(1,1)+cos(theta[AXIS2])*V_r_wst(2,1)+sin(theta[AXIS2])*cos(theta[AXIS1])*V_r_wst(3,1),cos(theta[AXIS1])*V_r_wst(1,1)-sin(theta[AXIS1])*V_r_wst(3,1));
+	theta[Index_AXIS3]=atan2( sin(theta[Index_AXIS2])*sin(theta[Index_AXIS1])*V_r_wst(1,1)+cos(theta[Index_AXIS2])*V_r_wst(2,1)+sin(theta[Index_AXIS2])*cos(theta[Index_AXIS1])*V_r_wst(3,1),cos(theta[Index_AXIS1])*V_r_wst(1,1)-sin(theta[Index_AXIS1])*V_r_wst(3,1));
 
 
 
@@ -162,7 +503,7 @@ int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_bas
 	V_r_wst_u=V_r_wst+V_Axis6;
 
 	Matrix A1_4(4,4);
-	A1_4=MatrixMath::RotY(theta[AXIS1])*MatrixMath::RotX(theta[AXIS2])*MatrixMath::RotZ(theta[AXIS3])*MatrixMath::Tz(-l1)*MatrixMath::RotY(theta[AXIS4]);//A1_4=Ry(theta(1))*Rx(theta(2))*Rz(theta(3))*Tz(-L1)*Ry(theta(4));
+	A1_4=MatrixMath::RotY(theta[Index_AXIS1])*MatrixMath::RotX(theta[Index_AXIS2])*MatrixMath::RotZ(theta[Index_AXIS3])*MatrixMath::Tz(-l1)*MatrixMath::RotY(theta[Index_AXIS4]);//A1_4=Ry(theta(1))*Rx(theta(2))*Rz(theta(3))*Tz(-L1)*Ry(theta(4));
 	
 
 	Matrix V_temp_f(4,1);
@@ -171,7 +512,7 @@ int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_bas
 	
 
 	V_temp_f=MatrixMath::Inv(A1_4)*V_r_wst_u_4x1;//V_temp_f=inv(A1_4)*[V_r_wst_u;1]; //(3.31) 這個是補一列1上去的意思,need fix
-	theta[AXIS5]=atan2(V_temp_f(2,1),V_temp_f(1,1));//theta(5)=atan2(V_temp_f(2),V_temp_f(1));
+	theta[Index_AXIS5]=atan2(V_temp_f(2,1),V_temp_f(1,1));//theta(5)=atan2(V_temp_f(2),V_temp_f(1));
 
 	
 	//theat 6
@@ -179,7 +520,7 @@ int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_bas
 	V_r_wst_r=V_r_wst+V_H_hat_y;
 
 	Matrix A1_5(4,4);
-	A1_5=A1_4*MatrixMath::RotZ(theta[AXIS5])*MatrixMath::Tz(-l2);//A1_5=A1_4*Rz(theta(5))*Tz(-L2);
+	A1_5=A1_4*MatrixMath::RotZ(theta[Index_AXIS5])*MatrixMath::Tz(-l2);//A1_5=A1_4*Rz(theta(5))*Tz(-L2);
 	
 	Matrix V_temp_g(4,4);
 	Matrix V_r_wst_r_4x1(4,1);
@@ -187,7 +528,7 @@ int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_bas
 	
 	V_temp_g=MatrixMath::Inv(A1_5)*V_r_wst_r_4x1; //V_temp_g=inv(A1_5)*[V_r_wst_r;1]; //(3.38)  這個是補一列1上去的意思,need fix
 	
-	theta[AXIS6]=atan2(V_temp_g(3,1),V_temp_g(2,1));
+	theta[Index_AXIS6]=atan2(V_temp_g(3,1),V_temp_g(2,1));
 
 
 	//theat 7
@@ -195,7 +536,7 @@ int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_bas
 	V_r_wst_f=V_r_wst+V_H_hat_x;
 
 	Matrix A1_6(4,4);
-	A1_6=A1_5*MatrixMath::RotX(theta[AXIS6]);
+	A1_6=A1_5*MatrixMath::RotX(theta[Index_AXIS6]);
 
 	Matrix V_temp_h(3,1);
 	Matrix V_r_wst_f_4x1(4,1);
@@ -203,7 +544,7 @@ int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_bas
 	
 	V_temp_h=MatrixMath::Inv(A1_6)*V_r_wst_f_4x1; //V_temp_h=inv(A1_6)*[V_r_wst_f;1]; 
 	
-	theta[AXIS7]=atan2(-V_temp_h(1,1),-V_temp_h(3,1));//theta(7)=atan2(-V_temp_h(1),-V_temp_h(3));
+	theta[Index_AXIS7]=atan2(-V_temp_h(1,1),-V_temp_h(3,1));//theta(7)=atan2(-V_temp_h(1),-V_temp_h(3));
 
 
 	return 0;
@@ -253,9 +594,9 @@ int IK_7DOF_FB7roll(const float linkL[6],const float base[3],const float Pend[3]
     float rf_norm=sqrt(pow(linkL[3],2)+pow(linkL[4],2));
 	
     float theta_tmp=acos((pow(ru_norm,2) + pow(rf_norm,2)- pow(norm(V_r_wst),2)) / (2*ru_norm*rf_norm));
-    theta[AXIS4]=(float)(2*M_PI)-atan2(linkL[1],linkL[2])-atan2(linkL[4],linkL[3])-theta_tmp;
+    theta[Index_AXIS4]=(float)(2*M_PI)-atan2(linkL[1],linkL[2])-atan2(linkL[4],linkL[3])-theta_tmp;
 
-    // ==Axis1 2== //
+    // ==AXIS1 2== //
 	Matrix V_r_m(3,1);
     V_r_m=(pow(ru_norm,2)-pow(rf_norm,2)+pow(norm(V_r_wst),2))/(2*pow(norm(V_r_wst),2))*V_r_wst;
 
@@ -308,7 +649,7 @@ int IK_7DOF_FB7roll(const float linkL[6],const float base[3],const float Pend[3]
 	Matrix V_r_f(3,1);// V_r_f=V_r_wst-V_r_u;
 	V_r_f=V_r_wst-V_r_u;
 
-	Matrix Vn_u_f(3,1);//Vn_u_f=cross(V_r_u,V_r_f)/norm(cross(V_r_u,V_r_f)); //ru 及 rf的法向量
+	Matrix Vn_u_f(3,1);//Vn_u_f=cross(V_r_u,V_r_f)/norm(cross(V_r_u,V_r_f)); //ru 及 rf的z法向量
 	temp_cross=MatrixMath::cross(V_r_u,V_r_f); 
 	Vn_u_f=temp_cross*(1/norm(temp_cross));
 	float theta_upoff=atan(linkL[2]/linkL[1]);
@@ -319,21 +660,21 @@ int IK_7DOF_FB7roll(const float linkL[6],const float base[3],const float Pend[3]
 	
 	V_ru_l1=linkL[1]*V_ru_l1*(1/norm(V_ru_l1)); //調整成L1長度
 	
-	theta[AXIS1]=atan2(V_ru_l1(1,1),-V_ru_l1(3,1));//theta(1)=atan2(V_ru_l1(1),-V_ru_l1(3));
+	theta[Index_AXIS1]=atan2(V_ru_l1(1,1),-V_ru_l1(3,1));//theta(1)=atan2(V_ru_l1(1),-V_ru_l1(3));
 
 
-	if (theta[AXIS1] !=0) 
-		theta[AXIS2]=atan2(V_ru_l1(2,1),V_ru_l1(1,1)/sin(theta[AXIS1]));
+	if (theta[Index_AXIS1] !=0) 
+		theta[Index_AXIS2]=atan2(V_ru_l1(2,1),V_ru_l1(1,1)/sin(theta[Index_AXIS1]));
 	else
-		theta[AXIS2]=atan2(V_ru_l1(2,1),-V_ru_l1(3,1));
+		theta[Index_AXIS2]=atan2(V_ru_l1(2,1),-V_ru_l1(3,1));
 
 
-	// ==Axis3== //
+	// ==AXIS3== //
 	//看shy(V_r_u,V_r_f的法向量)經過1,2軸旋轉後  與V_r_u,V_r_f 需要第3軸轉多少
 	Matrix nV_shy;
 	nV_shy=V_shy*(-1);
 	V_temp4x1.Vec_ext_1_row(nV_shy,1);// V_n_yrot12=Ry(-theta(1))*Rx(theta(2))*[-V_shy;1];  //第一軸和大地Y座標方向相反
-	temp=MatrixMath::RotY(-theta[AXIS1])*MatrixMath::RotX(theta[AXIS2])*V_temp4x1;
+	temp=MatrixMath::RotY(-theta[Index_AXIS1])*MatrixMath::RotX(theta[Index_AXIS2])*V_temp4x1;
 	
 	Matrix V_n_yrot12(3,1);
 	V_n_yrot12.Vec_export_3_row(temp);//V_n_yrot12=V_n_yrot12(1:3,1);
@@ -346,9 +687,9 @@ int IK_7DOF_FB7roll(const float linkL[6],const float base[3],const float Pend[3]
 
 	//Vn_u_f 和 V_n_yrot12的法向量   與 V_ru_l1同方向 theta(3)需要加負號
 	if ( norm(Vn_nuf_nyrot12 - V_ru_l1*(1/norm(V_ru_l1))) < DEF_VERY_SMALL )
-		theta[AXIS3]=-acos(tempfloat);
+		theta[Index_AXIS3]=-acos(tempfloat);
 	else
-		theta[AXIS3]=acos(tempfloat);
+		theta[Index_AXIS3]=acos(tempfloat);
 	
 	
     // ==Axis5== //
@@ -385,13 +726,13 @@ int IK_7DOF_FB7roll(const float linkL[6],const float base[3],const float Pend[3]
  
 	//平面法向量 和 Vn_rfl4_nuf  同邊要加負號  判斷theta5要往上或往下轉
 	if (norm(Vn_rfl4_WstToProjEndRfl4Nuf - Vn_rfl4_nuf) < DEF_VERY_SMALL)
-        theta[AXIS5]=-acos(tempfloat); 
+        theta[Index_AXIS5]=-acos(tempfloat); 
     else
-        theta[AXIS5]=acos(tempfloat); 
+        theta[Index_AXIS5]=acos(tempfloat); 
 
 	// ==Axis6== //
 	V_temp4x1.Vec_ext_1_row(Vn_u_f,1);
-	temp=Rogridues(-theta[AXIS5],Vn_rfl4_nuf)*V_temp4x1; 
+	temp=Rogridues(-theta[Index_AXIS5],Vn_rfl4_nuf)*V_temp4x1; 
 	Matrix Vn_nuf_rotx5_along_NRfl4Nuf(3,1);
 	Vn_nuf_rotx5_along_NRfl4Nuf.Vec_export_3_row(temp);  //Vn_nuf_rotx5_along_NRfl4Nuf=temp(1:3,1);//nuf 沿著 Vn_rfl4_nuf 旋轉第5軸角度得到投影點與目標點平面的法向量
 	Vn_nuf_rotx5_along_NRfl4Nuf=Vn_nuf_rotx5_along_NRfl4Nuf*(1/norm(Vn_nuf_rotx5_along_NRfl4Nuf));
@@ -407,20 +748,20 @@ int IK_7DOF_FB7roll(const float linkL[6],const float base[3],const float Pend[3]
 	tempfloat=MatrixMath::dot(V_wst_to_projend_rfl4_nuf,V_wst_to_end)*(1/norm(V_wst_to_projend_rfl4_nuf)*(1/norm(V_wst_to_end))); //temp=V_wst_to_projend_rfl4_nuf'*V_wst_to_end/norm(V_wst_to_projend_rfl4_nuf)/norm(V_wst_to_end);
 
 	if (norm(Vn_WstToEnd_WstToProjEndRfl4Nuf - Vn_nuf_rotx5_along_NRfl4Nuf) < DEF_VERY_SMALL)
-        theta[AXIS6]=-acos(tempfloat); 
+        theta[Index_AXIS6]=-acos(tempfloat); 
     else
-        theta[AXIS6]=acos(tempfloat); 
+        theta[Index_AXIS6]=acos(tempfloat); 
 	
 	// ==Axis7== //
 	Matrix V_x_rot1to6;
 	V_temp4x1.Vec_ext_1_row(V_shx,1);
-	V_x_rot1to6=MatrixMath::RotY(-theta[AXIS1])*MatrixMath::RotX(theta[AXIS2])*V_temp4x1;//V_x_rot1to6=Ry(-theta(1))*Rx(theta(2))*[V_shx;1];  //第一軸和大地Z座標方向相反
+	V_x_rot1to6=MatrixMath::RotY(-theta[Index_AXIS1])*MatrixMath::RotX(theta[Index_AXIS2])*V_temp4x1;//V_x_rot1to6=Ry(-theta(1))*Rx(theta(2))*[V_shx;1];  //第一軸和大地Z座標方向相反
 	
 	//V_shx經過1to軸旋轉後變應該要與末點座標系的Z軸貼齊
-	temp=Rogridues(theta[AXIS3],V_ru_l1*(1/norm(V_ru_l1)))*V_x_rot1to6;		//temp=Rogridues(theta(3),V_ru_l1/norm(V_ru_l1))*V_x_rot1to6;  
-	temp=Rogridues(theta[AXIS4],Vn_u_f*(1/norm(Vn_u_f)))*temp;				//temp=Rogridues(theta(4),Vn_u_f/norm(Vn_u_f))*temp;  
-	temp=Rogridues(theta[AXIS5],Vn_rfl4_nuf*(1/norm(Vn_rfl4_nuf)))*temp;	//temp=Rogridues(theta(5),Vn_rfl4_nuf/norm(Vn_rfl4_nuf))*temp; 
-	temp=Rogridues(theta[AXIS6],Vn_nuf_rotx5_along_NRfl4Nuf)*temp;			//temp=Rogridues(theta(6),Vn_nuf_rotx5_along_NRfl4Nuf)*temp; 
+	temp=Rogridues(theta[Index_AXIS3],V_ru_l1*(1/norm(V_ru_l1)))*V_x_rot1to6;		//temp=Rogridues(theta(3),V_ru_l1/norm(V_ru_l1))*V_x_rot1to6;  
+	temp=Rogridues(theta[Index_AXIS4],Vn_u_f*(1/norm(Vn_u_f)))*temp;				//temp=Rogridues(theta(4),Vn_u_f/norm(Vn_u_f))*temp;  
+	temp=Rogridues(theta[Index_AXIS5],Vn_rfl4_nuf*(1/norm(Vn_rfl4_nuf)))*temp;	//temp=Rogridues(theta(5),Vn_rfl4_nuf/norm(Vn_rfl4_nuf))*temp; 
+	temp=Rogridues(theta[Index_AXIS6],Vn_nuf_rotx5_along_NRfl4Nuf)*temp;			//temp=Rogridues(theta(6),Vn_nuf_rotx5_along_NRfl4Nuf)*temp; 
 	V_x_rot1to6.Vec_export_3_row(temp);										//V_x_rot1to6=temp(1:3,1); 
 	V_x_rot1to6=V_x_rot1to6*(1/norm(V_x_rot1to6));
 
@@ -430,15 +771,114 @@ int IK_7DOF_FB7roll(const float linkL[6],const float base[3],const float Pend[3]
 	Vn_xrot1to6_VHhatz=Vn_xrot1to6_VHhatz*(1/norm(Vn_xrot1to6_VHhatz));
 
 	//V_shx經過123456軸旋轉後和末點座標系的Z軸還差幾度
-	theta[AXIS7]=acos(MatrixMath::dot(V_x_rot1to6,V_H_hat_z)*(1/norm(V_x_rot1to6))*(1/norm(V_H_hat_z)));// theta(7)=acos(V_x_rot1to6'*V_H_hat_z/norm(V_x_rot1to6)/norm(V_H_hat_z));
+	theta[Index_AXIS7]=acos(MatrixMath::dot(V_x_rot1to6,V_H_hat_z)*(1/norm(V_x_rot1to6))*(1/norm(V_H_hat_z)));// theta(7)=acos(V_x_rot1to6'*V_H_hat_z/norm(V_x_rot1to6)/norm(V_H_hat_z));
 
 	if (norm(Vn_xrot1to6_VHhatz - V_H_hat_x) <  DEF_VERY_SMALL)
-        theta[AXIS7]=theta[AXIS7];
+        theta[Index_AXIS7]=theta[Index_AXIS7];
     else
-        theta[AXIS7]=-theta[AXIS7];  
+        theta[Index_AXIS7]=-theta[Index_AXIS7];  
 	
 	memcpy(out_theta,theta,sizeof(theta));
 	
 	return 0;
 }
 
+bool AngleOverConstrain(const float theta[MAX_AXIS_NUM],int *OverIndex)
+{
+	//theta_L=[-80 -180 -105 0 -30 -37 -180];
+    //theta_H=[180 10 250 180 90 90 180];
+	bool bOver=false;
+	*OverIndex=NULL;
+    for(int index=Index_AXIS1;index<=Index_AXIS7;index++)
+	{
+        if (theta[index]<grobot_lim_rad_L[index] || theta[index]>grobot_lim_rad_H[index])  
+		{
+			bOver=true;
+            *OverIndex=index;
+            break;
+		}
+	}
+	return bOver;
+}
+
+//stanley
+int syncWrite_x86(unsigned short int start_addr, unsigned short int data_length, unsigned short int *param, unsigned short int param_length) // WORD(16bit) syncwrite() for DXL  stanley
+{
+    //syncWrite_u16base(GOAL_POSITION,2,SyncPage1,21);//byte syncWrite(byte start_addr, byte num_of_data, int *param, int array_length);
+	dxl_set_txpacket_id(BROADCAST_ID);
+	dxl_set_txpacket_instruction(INST_SYNC_WRITE);
+	dxl_set_txpacket_parameter(0, start_addr);
+	dxl_set_txpacket_parameter(1,data_length*2);
+
+	int slaveNum=param_length/(data_length+1);
+    int OneRawByte=(1+data_length*2);//ID(1byte) + worddata*len(2byte*len)
+
+    int i=0; //offset of slave number(number of row)
+    int j=0; //offset of data in raw
+    int k=1;//offset of int *param 
+    int index=0;
+
+    for( i=0; i<slaveNum; i++ )
+    { 
+        index=OneRawByte*i+2;
+        dxl_set_txpacket_parameter(index,(unsigned char)param[i*(data_length+1)]);//ID
+        k=1;
+
+        for(j=1;j<OneRawByte;j+=2)
+        {
+            dxl_set_txpacket_parameter(index+j,(unsigned char)(param[i*(data_length+1)+k]&0xff)); //DATA L    
+            dxl_set_txpacket_parameter(index+j+1,(unsigned char)(param[i*(data_length+1)+k]>>8)); //DATA H
+            k++;
+        }
+    } 
+	
+    dxl_set_txpacket_length(OneRawByte*slaveNum+4);
+
+	//for(int i=0;i<50;i++)
+	//	printf("gbInstructionPacket[%d]=%x\n",i,gbInstructionPacket[i]);//stanley test
+
+    dxl_txrx_packet();
+	int CommStatus =0;
+	CommStatus=dxl_get_result();
+
+    return CommStatus;
+
+}
+
+int setPosition_x86(int ServoID, int Position, int Speed)//stanley
+{
+	dxl_set_txpacket_id(ServoID);
+	dxl_set_txpacket_instruction(INST_WRITE);
+	dxl_set_txpacket_parameter(0,GOAL_POSITION);
+	dxl_set_txpacket_parameter(1,(unsigned char)dxl_get_lowbyte(Position));
+	dxl_set_txpacket_parameter(2,(unsigned char)dxl_get_highbyte(Position));
+	dxl_set_txpacket_parameter(3,(unsigned char)dxl_get_lowbyte(Speed));
+	dxl_set_txpacket_parameter(4,(unsigned char)dxl_get_highbyte(Speed));
+	dxl_set_txpacket_length(7);
+
+	dxl_txrx_packet();
+
+	int CommStatus =0;
+	CommStatus=dxl_get_result();
+
+	return CommStatus;
+}
+
+
+int DXL_Initial_x86()
+{
+	int rt=0;
+	const int default_portnum=5;
+	const int default_baudnum=1;
+
+	rt=dxl_initialize( default_portnum,default_baudnum);
+	
+	return rt;
+}
+
+int DXL_Terminate_x86()
+{
+	dxl_terminate();
+	
+	return 0;
+}
