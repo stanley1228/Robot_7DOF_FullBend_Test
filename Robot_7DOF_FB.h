@@ -240,5 +240,4 @@ int DXL_Initial_x86();
 int DXL_Terminate_x86();
 
 
-
 #endif    /* ROBOT_7DOF_FB__H */
