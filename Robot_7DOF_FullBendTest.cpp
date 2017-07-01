@@ -10,14 +10,7 @@
 using namespace std;
 
 
-#define DEBUG 1
 
-
-#if (DEBUG)
-	#define DBGMSG(x)  printf x;
-#else
-    #define DBGMSG(x)
-#endif
 
 int TestAction()
 {
@@ -43,7 +36,20 @@ int TestAction()
 		printf("axis%d=%f,over constrain, %f< axis%d < %f\n",gMapAxisNO[over_index],theta[over_index]*DEF_RATIO_RAD_TO_DEG,grobot_lim_rad_L[over_index]*DEF_RATIO_RAD_TO_DEG,gMapAxisNO[over_index],grobot_lim_rad_H[over_index]*DEF_RATIO_RAD_TO_DEG);  
 	}	
 
-	unsigned short int velocity[MAX_AXIS_NUM]={50,50,50,50,50,0,50};
+	unsigned short int velocity[MAX_AXIS_NUM]={10,10,10,10,10,10,10};
+	
+	rt=Output_to_Dynamixel(theta,velocity); 
+
+	return 0;
+}
+
+
+
+int TesOutput()
+{
+	int rt=0;
+	unsigned short int velocity[MAX_AXIS_NUM]={10,10,10,50,50,0,50};
+	float theta[7]={60*DEF_RATIO_DEG_TO_RAD,15*DEF_RATIO_DEG_TO_RAD,60*DEF_RATIO_DEG_TO_RAD,0,0,0,0};
 	
 	rt=Output_to_Dynamixel(theta,velocity); 
 
@@ -87,11 +93,11 @@ void TestReadPos()
 	//==Read pos_pus==//
 	static float pos_pus[MAX_AXIS_NUM]={0};
 	int rt=0;
-	rt=Read_pos(pos_pus,DEF_UNIT_RAD);
+	rt=Read_pos(pos_pus,DEF_UNIT_DEG);
 
 	for(int i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
 	{
-		DBGMSG(("AXIS[%d]=%3f,",gMapAxisNO[i],pos_pus[i]))
+		DBGMSG(("AXIS[%d]=%3.2f,",gMapAxisNO[i],pos_pus[i]))
 	}
 
 	DBGMSG(("\n"))
@@ -107,14 +113,15 @@ int clockTest()
 	start = std::clock();
 	while(1)
 	{
-   
+		
     /* Your algorithm here */
 
     duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 
 		if (duration==2)
 		{
-			 std::cout<<"printf: "<< duration <<'\n';
+			 //std::cout<<"printf: "<< duration <<'\n';
+			 TestReadPos();
 			 start = std::clock();
 		}
 	}
@@ -125,16 +132,23 @@ int clockTest()
 int _tmain(int argc, _TCHAR* argv[])
 {
 	int rt=DXL_Initial_x86();
-	//ROM_Setting();
 	if(rt==0)
 		return 0;
-	
+
+	//TesOutput();
+
+	//ROM_Setting();
 	TestAction();
+	clockTest();
+	
 	//TestSyncwrite();
 	
-	TestReadPos();
-	DXL_Terminate_x86();
+	//TestReadPos();
+
 	getchar();
+
+	DXL_Terminate_x86();
+	
 	return 0;
 }
 
