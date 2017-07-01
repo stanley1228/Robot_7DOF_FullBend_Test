@@ -5,6 +5,13 @@
 #include "Matrix.h"
 
 
+#define DEBUG 1
+
+#if (DEBUG)
+	#define DBGMSG(x)  printf x;
+#else
+    #define DBGMSG(x)
+#endif
 
 //==========
 //==MAX AXIS
@@ -92,9 +99,9 @@ enum{
 
 //==robot to Motor offset==//  //robot pos=motor position -M2R_OFFSET
 
-#define AXIS1_R2M_OFFSET_DEG 90
-#define AXIS2_R2M_OFFSET_DEG 90
-#define AXIS3_R2M_OFFSET_DEG 225
+#define AXIS1_R2M_OFFSET_DEG 180
+#define AXIS2_R2M_OFFSET_DEG 270
+#define AXIS3_R2M_OFFSET_DEG 180
 #define AXIS4_R2M_OFFSET_DEG 90
 #define AXIS5_R2M_OFFSET_DEG 180
 #define AXIS6_R2M_OFFSET_DEG 90
@@ -102,13 +109,13 @@ enum{
 
 //==robot angle limit==//
 #define AXIS1_ROBOT_LIM_DEG_L (-80)
-#define AXIS1_ROBOT_LIM_DEG_H 180
+#define AXIS1_ROBOT_LIM_DEG_H 170
 #define AXIS2_ROBOT_LIM_DEG_L (-180)
 #define AXIS2_ROBOT_LIM_DEG_H 10
 #define AXIS3_ROBOT_LIM_DEG_L (-105)
-#define AXIS3_ROBOT_LIM_DEG_H 250
-#define AXIS4_ROBOT_LIM_DEG_L 0	//need to test
-#define AXIS4_ROBOT_LIM_DEG_H 180	//need to test
+#define AXIS3_ROBOT_LIM_DEG_H 170
+#define AXIS4_ROBOT_LIM_DEG_L 0	
+#define AXIS4_ROBOT_LIM_DEG_H 170	
 #define AXIS5_ROBOT_LIM_DEG_L (-30)
 #define AXIS5_ROBOT_LIM_DEG_H 90
 #define AXIS6_ROBOT_LIM_DEG_L (-37)
@@ -118,10 +125,10 @@ enum{
 
 
 //==robot TORQUE limit==//  0~1023
-#define AXIS1_MAX_TORQUE 55
-#define AXIS2_MAX_TORQUE 55
-#define AXIS3_MAX_TORQUE 55
-#define AXIS4_MAX_TORQUE 55
+#define AXIS1_MAX_TORQUE 614	//60%
+#define AXIS2_MAX_TORQUE 430
+#define AXIS3_MAX_TORQUE 300	//40%
+#define AXIS4_MAX_TORQUE 415	//40%
 #define AXIS5_MAX_TORQUE 55
 #define AXIS6_MAX_TORQUE 200
 #define AXIS7_MAX_TORQUE 55
