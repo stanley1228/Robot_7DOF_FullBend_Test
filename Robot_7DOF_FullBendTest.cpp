@@ -7,15 +7,95 @@
 
 #define _USE_MATH_DEFINES // for C++
 #include <math.h>
+//#include <iostream>
+#include <windows.h> //sleep使用
 using namespace std;
 
 
 
 
+
+int MoveToPoint(float x,float y,float z,float alpha_deg,float beta_deg,float gamma_deg,float redant_alpha_deg)  //應該要有一個速度參數
+{
+	const float linkL[6]={L0,L1,L2,L3,L4,L5};
+	const float base[3]={0.0};
+	float Pend[3]={x,y,z};
+	float PoseAngle[3]={alpha_deg*DEF_RATIO_DEG_TO_RAD,beta_deg*DEF_RATIO_DEG_TO_RAD,gamma_deg*DEF_RATIO_DEG_TO_RAD};
+	float Rednt_alpha=redant_alpha_deg*DEF_RATIO_DEG_TO_RAD;
+	float theta[7]={0};
+
+	//inverse kinematics
+	int rt = IK_7DOF_FB7roll(linkL,base,Pend,PoseAngle,Rednt_alpha,theta);
+	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+		DBGMSG(("axis %d=%f\n",gMapAxisNO[i],theta[i]))
+
+	//AngleOverConstrain
+	int over_index=0;
+	bool bOver=AngleOverConstrain(theta,&over_index);
+	if(bOver)
+		DBGMSG(("axis%d=%f,over constrain, %f< axis%d < %f\n",gMapAxisNO[over_index],theta[over_index]*DEF_RATIO_RAD_TO_DEG,grobot_lim_rad_L[over_index]*DEF_RATIO_RAD_TO_DEG,gMapAxisNO[over_index],grobot_lim_rad_H[over_index]*DEF_RATIO_RAD_TO_DEG));  
+
+	unsigned short int velocity[MAX_AXIS_NUM]={20,20,20,20,20,20};
+	
+	//output to motor
+	rt=Output_to_Dynamixel(theta,velocity); 
+
+	return 0;
+}
+
+#define DEF_DESCRETE_POINT 90
+int TestRectangle()
+{
+	//把此路徑分成90份
+	float O[3]={500,-50,0};  
+	float Q[3]={500,-200,0};
+	float R[3]={500,-200,-150};
+	float S[3]={500,-50,-150};
+	float point[3]={0,0,0};
+ 
+	//Path=zeros(DEF_DESCRETE_POINT,3);//規畫的路徑點
+	//PathPoint=zeros(DEF_DESCRETE_POINT,3);//記錄實際上的點，畫圖使用
+	//PathTheta=zeros(DEF_DESCRETE_POINT,7);//記錄每軸角度，畫圖使用
+
+	 //畫正方形做IK FK測試
+	for(int t=1;t<=DEF_DESCRETE_POINT;t++)
+	{
+		if(t<=25)
+		{
+			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
+				point[f]=O[f]+(Q[f]-O[f])*t/25; 
+		}
+		else if(t<=50)
+		{
+			for(int f=0;f<3;f++)  
+				point[f]=Q[f]+(R[f]-Q[f])*(t-25)/25;
+		}
+		else if(t<=75)
+		{
+			for(int f=0;f<3;f++)  
+				point[f]=R[f]+(S[f]-R[f])*(t-50)/25;
+		}
+		else 
+		{
+			for(int f=0;f<3;f++)  
+				point[f]=S[f]+(O[f]-S[f])*(t-75)/15;
+		}
+	
+		Sleep(100);
+		MoveToPoint(point[0],point[1],point[2],30,0,0,-90);
+		//DBGMSG(("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]))
+		printf("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]);
+	}
+
+	return 0;
+}
+
+
+
 int TestAction()
 {
-	float linkL[6]={L0,L1,L2,L3,L4,L5};
-	float base[3]={0.0};
+	const float linkL[6]={L0,L1,L2,L3,L4,L5};
+	const float base[3]={0.0};
 	float Pend[3]={500.0,-56.0,0};
 	float PoseAngle[3]={30*DEF_RATIO_DEG_TO_RAD,0,0};
 	float Rednt_alpha=-90*DEF_RATIO_DEG_TO_RAD;
@@ -45,7 +125,7 @@ int TestAction()
 
 
 
-int TesOutput()
+int TestOutput()
 {
 	int rt=0;
 	unsigned short int velocity[MAX_AXIS_NUM]={10,10,10,50,50,0,50};
@@ -129,17 +209,25 @@ int clockTest()
 
 }
 
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	int rt=DXL_Initial_x86();
 	if(rt==0)
 		return 0;
+	
+	MoveToPoint(500,-50,0,30,0,0,-90);
+	Sleep(3000);
 
-	//TesOutput();
+	for(int i=0;i<4;i++)
+	{
+		TestRectangle();
+	}
+	//TestOutput();
 
 	//ROM_Setting();
-	TestAction();
-	clockTest();
+	//TestAction();
+	//clockTest();
 	
 	//TestSyncwrite();
 	
