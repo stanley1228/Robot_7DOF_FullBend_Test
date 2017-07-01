@@ -287,8 +287,8 @@ int Output_to_Dynamixel(const float *Ang_rad,const unsigned short int *velocity)
 
 	
 #if (DEBUG)
-	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
-		printf("syncwrite AXIS%d pos=%d velocity=%d\n",gMapAxisNO[i],Ang_pulse[i],velocity[i]);
+	//for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	//	printf("syncwrite AXIS%d pos=%d velocity=%d\n",gMapAxisNO[i],Ang_pulse[i],velocity[i]);
 #endif
 
 	syncWrite_x86(GOAL_POSITION,2,SyncPage1,21);//byte syncWrite(byte start_addr, byte num_of_data, int *param, int array_length);
@@ -882,3 +882,4 @@ int DXL_Terminate_x86()
 	
 	return 0;
 }
+
