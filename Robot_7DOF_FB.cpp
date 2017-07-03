@@ -29,98 +29,164 @@ unsigned char getMapAxisNO(unsigned char index)
 
 }
 
-unsigned char getMapAxisID(unsigned char index)
+unsigned char getMapRAxisID(unsigned char index)
 {
-	return gMapAxisID[index];
+	return gMapRAxisID[index];
+}
+
+unsigned char getMapLAxisID(unsigned char index)
+{
+	return gMapLAxisID[index];
 }
 
 
-int ROM_Setting() //new
+int ROM_Setting_Dual()
 {
 	//==calculate Max torque to set in rom 
-	const short int Max_torque[MAX_AXIS_NUM]=
+	const short int Max_torque_R[MAX_AXIS_NUM]=
 	{
-		AXIS1_MAX_TORQUE,
-		AXIS2_MAX_TORQUE,
-		AXIS3_MAX_TORQUE,
-		AXIS4_MAX_TORQUE,
-		AXIS5_MAX_TORQUE,
-		AXIS6_MAX_TORQUE,
-		AXIS7_MAX_TORQUE
+		AXISR1_MAX_TORQUE,
+		AXISR2_MAX_TORQUE,
+		AXISR3_MAX_TORQUE,
+		AXISR4_MAX_TORQUE,
+		AXISR5_MAX_TORQUE,
+		AXISR6_MAX_TORQUE,
+		AXISR7_MAX_TORQUE
 	};
+
+	const short int Max_torque_L[MAX_AXIS_NUM]=
+	{
+		AXISL1_MAX_TORQUE,
+		AXISL2_MAX_TORQUE,
+		AXISL3_MAX_TORQUE,
+		AXISL4_MAX_TORQUE,
+		AXISL5_MAX_TORQUE,
+		AXISL6_MAX_TORQUE,
+		AXISL7_MAX_TORQUE
+	};
+
 
 
 	//==Calculate angle limit==//
-	const short int R2M_OFFSET_DEG[MAX_AXIS_NUM]=
+	const short int R2M_OFFSET_DEG_R[MAX_AXIS_NUM]=
 	{
-		AXIS1_R2M_OFFSET_DEG,
-		AXIS2_R2M_OFFSET_DEG,
-		AXIS3_R2M_OFFSET_DEG,
-		AXIS4_R2M_OFFSET_DEG,
-		AXIS5_R2M_OFFSET_DEG,
-		AXIS6_R2M_OFFSET_DEG,
-		AXIS7_R2M_OFFSET_DEG
+		AXISR1_R2M_OFFSET_DEG,
+		AXISR2_R2M_OFFSET_DEG,
+		AXISR3_R2M_OFFSET_DEG,
+		AXISR4_R2M_OFFSET_DEG,
+		AXISR5_R2M_OFFSET_DEG,
+		AXISR6_R2M_OFFSET_DEG,
+		AXISR7_R2M_OFFSET_DEG
 	};
 
-	const short int ROBOT_LIM_DEG_L[MAX_AXIS_NUM]=
+	const short int R2M_OFFSET_DEG_L[MAX_AXIS_NUM]=
 	{
-		AXIS1_ROBOT_LIM_DEG_L,
-		AXIS2_ROBOT_LIM_DEG_L,
-		AXIS3_ROBOT_LIM_DEG_L,
-		AXIS4_ROBOT_LIM_DEG_L,
-		AXIS5_ROBOT_LIM_DEG_L,
-		AXIS6_ROBOT_LIM_DEG_L,
-		AXIS7_ROBOT_LIM_DEG_L
+		AXISL1_R2M_OFFSET_DEG,
+		AXISL2_R2M_OFFSET_DEG,
+		AXISL3_R2M_OFFSET_DEG,
+		AXISL4_R2M_OFFSET_DEG,
+		AXISL5_R2M_OFFSET_DEG,
+		AXISL6_R2M_OFFSET_DEG,
+		AXISL7_R2M_OFFSET_DEG
+	};
+	
+	//right hand
+	const short int ROBOT_LIM_DEG_R_LOW[MAX_AXIS_NUM]=
+	{
+		AXISR1_ROBOT_LIM_DEG_L,
+		AXISR2_ROBOT_LIM_DEG_L,
+		AXISR3_ROBOT_LIM_DEG_L,
+		AXISR4_ROBOT_LIM_DEG_L,
+		AXISR5_ROBOT_LIM_DEG_L,
+		AXISR6_ROBOT_LIM_DEG_L,
+		AXISR7_ROBOT_LIM_DEG_L
 	};
 
-	const short int ROBOT_LIM_DEG_H[MAX_AXIS_NUM]=
+	const short int ROBOT_LIM_DEG_R_HIGH[MAX_AXIS_NUM]=
 	{
-		AXIS1_ROBOT_LIM_DEG_H,
-		AXIS2_ROBOT_LIM_DEG_H,
-		AXIS3_ROBOT_LIM_DEG_H,
-		AXIS4_ROBOT_LIM_DEG_H,
-		AXIS5_ROBOT_LIM_DEG_H,
-		AXIS6_ROBOT_LIM_DEG_H,
-		AXIS7_ROBOT_LIM_DEG_H
+		AXISR1_ROBOT_LIM_DEG_H,
+		AXISR2_ROBOT_LIM_DEG_H,
+		AXISR3_ROBOT_LIM_DEG_H,
+		AXISR4_ROBOT_LIM_DEG_H,
+		AXISR5_ROBOT_LIM_DEG_H,
+		AXISR6_ROBOT_LIM_DEG_H,
+		AXISR7_ROBOT_LIM_DEG_H
 	};
 
-	unsigned short int Motor_lim_pulse_h[MAX_AXIS_NUM]={0};
-	unsigned short int Motor_lim_pulse_l[MAX_AXIS_NUM]={0};
+	//left hand
+	const short int ROBOT_LIM_DEG_L_LOW[MAX_AXIS_NUM]= 
+	{
+		AXISL1_ROBOT_LIM_DEG_L,
+		AXISL2_ROBOT_LIM_DEG_L,
+		AXISL3_ROBOT_LIM_DEG_L,
+		AXISL4_ROBOT_LIM_DEG_L,
+		AXISL5_ROBOT_LIM_DEG_L,
+		AXISL6_ROBOT_LIM_DEG_L,
+		AXISL7_ROBOT_LIM_DEG_L
+	};
+
+	const short int ROBOT_LIM_DEG_L_HIGH[MAX_AXIS_NUM]= 
+	{
+		AXISL1_ROBOT_LIM_DEG_H,
+		AXISL2_ROBOT_LIM_DEG_H,
+		AXISL3_ROBOT_LIM_DEG_H,
+		AXISL4_ROBOT_LIM_DEG_H,
+		AXISL5_ROBOT_LIM_DEG_H,
+		AXISL6_ROBOT_LIM_DEG_H,
+		AXISL7_ROBOT_LIM_DEG_H
+	};
+
+
+
+	unsigned short int Motor_lim_pulse_R_high[MAX_AXIS_NUM]={0};
+	unsigned short int Motor_lim_pulse_R_low[MAX_AXIS_NUM]={0};
+	unsigned short int Motor_lim_pulse_L_high[MAX_AXIS_NUM]={0};
+	unsigned short int Motor_lim_pulse_L_low[MAX_AXIS_NUM]={0};
 	
 
 	int i=0;
 	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
 	{
-		Motor_lim_pulse_l[i]=(unsigned short int)((ROBOT_LIM_DEG_L[i]+R2M_OFFSET_DEG[i])*DEF_RATIO_DEG_TO_PUS);
-		Motor_lim_pulse_h[i]=(unsigned short int)((ROBOT_LIM_DEG_H[i]+R2M_OFFSET_DEG[i])*DEF_RATIO_DEG_TO_PUS);
+		//right hand
+		Motor_lim_pulse_R_low[i]=(unsigned short int)((ROBOT_LIM_DEG_R_LOW[i]+R2M_OFFSET_DEG_R[i])*DEF_RATIO_DEG_TO_PUS);
+		Motor_lim_pulse_R_high[i]=(unsigned short int)((ROBOT_LIM_DEG_R_HIGH[i]+R2M_OFFSET_DEG_R[i])*DEF_RATIO_DEG_TO_PUS);
+
+		//left hand
+		Motor_lim_pulse_L_low[i]=(unsigned short int)((ROBOT_LIM_DEG_L_LOW[i]+R2M_OFFSET_DEG_L[i])*DEF_RATIO_DEG_TO_PUS);
+		Motor_lim_pulse_L_high[i]=(unsigned short int)((ROBOT_LIM_DEG_L_HIGH[i]+R2M_OFFSET_DEG_L[i])*DEF_RATIO_DEG_TO_PUS);
 	}
 
 	//==writing to ROM==//
 	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
 	{
 		//==Set MAX_torgue==//
-		dxl_write_word(gMapAxisID[i],MAX_TORQUE,Max_torque[i]);//  more safe
+		dxl_write_word(gMapRAxisID[i],MAX_TORQUE,Max_torque_R[i]);//right
+		dxl_write_word(gMapLAxisID[i],MAX_TORQUE,Max_torque_L[i]);//left
 	
 		//==Set angel limit==//
-		dxl_write_word(gMapAxisID[i],CW_ANGLE_LIMIT_L,Motor_lim_pulse_l[i]);
-		dxl_write_word(gMapAxisID[i],CCW_ANGLE_LIMIT_L,Motor_lim_pulse_h[i]);  
+		dxl_write_word(gMapRAxisID[i],CW_ANGLE_LIMIT_L,Motor_lim_pulse_R_low[i]);//right
+		dxl_write_word(gMapRAxisID[i],CCW_ANGLE_LIMIT_L,Motor_lim_pulse_R_high[i]);//right  
+
+		dxl_write_word(gMapLAxisID[i],CW_ANGLE_LIMIT_L,Motor_lim_pulse_L_low[i]);//left
+		dxl_write_word(gMapLAxisID[i],CCW_ANGLE_LIMIT_L,Motor_lim_pulse_L_high[i]);//left  
 
 		//==Set MULTITURN_OFFSET to 0==//
-		dxl_write_word(gMapAxisID[i],MULTITURN_OFFSET,0);
+		dxl_write_word(gMapRAxisID[i],MULTITURN_OFFSET,0);//right
+		dxl_write_word(gMapLAxisID[i],MULTITURN_OFFSET,0);//left
 	}
 	
 
-	//==read and check ==//
+	//==read and check right hand==//
 	int	txrx_result=0;
 	short int max_torque=0;
 	short int cw_angel_lim=0,ccw_angle_lim=0;
 	short int multi_turn_offset=0;
 	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
 	{
-		printf("===AXIS_%d===\n",gMapAxisNO[i]);
+		printf("===AXIS_R%d===\n",gMapAxisNO[i]);
 
 		//==MAX_torgue==//
-		max_torque = dxl_read_word(gMapAxisID[i], MAX_TORQUE);
+		max_torque = dxl_read_word(gMapRAxisID[i], MAX_TORQUE);
 		txrx_result = dxl_get_result();
 		if(txrx_result!=COMM_RXSUCCESS)
 			printf("Failed read MAX_TORQUE error=%d\n",txrx_result);
@@ -128,14 +194,14 @@ int ROM_Setting() //new
 			printf("MAX_TORQUE=%d\n",max_torque);
 	
 		//==CW_ANGLE_LIMIT,CCW_ANGLE_LIMIT==//
-		cw_angel_lim=dxl_read_word(gMapAxisID[i],CW_ANGLE_LIMIT_L);
+		cw_angel_lim=dxl_read_word(gMapRAxisID[i],CW_ANGLE_LIMIT_L);
 		txrx_result = dxl_get_result();
 		if(txrx_result!=COMM_RXSUCCESS)
 			printf("Failed read CW_ANGLE_LIMIT error=%d\n",txrx_result);
 		else	
 			printf("CW_ANGLE_LIMIT=%d,degree=%f\n",cw_angel_lim,cw_angel_lim*DEF_RATIO_PUS_TO_DEG);
 
-		ccw_angle_lim=dxl_read_word(gMapAxisID[i],CCW_ANGLE_LIMIT_L);
+		ccw_angle_lim=dxl_read_word(gMapRAxisID[i],CCW_ANGLE_LIMIT_L);
 		txrx_result = dxl_get_result();
 		if(txrx_result!=COMM_RXSUCCESS)
 			printf("Failed Read CCW_ANGLE_LIMIT failed error=%d\n",txrx_result);
@@ -144,7 +210,45 @@ int ROM_Setting() //new
 		
 
 		//==multi turn offset==//
-		multi_turn_offset=dxl_read_word(gMapAxisID[i],MULTITURN_OFFSET);
+		multi_turn_offset=dxl_read_word(gMapRAxisID[i],MULTITURN_OFFSET);
+		txrx_result = dxl_get_result();
+		if(txrx_result!=COMM_RXSUCCESS)
+			printf("Failed Read MULTITURN_OFFSET failed error=%d\n",txrx_result);
+		else	
+			printf("MULTITURN_OFFSET=%d\n",multi_turn_offset);
+	}
+
+	//==read and check left hand==//
+	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	{
+		printf("===AXIS_L%d===\n",gMapAxisNO[i]);
+
+		//==MAX_torgue==//
+		max_torque = dxl_read_word(gMapLAxisID[i], MAX_TORQUE);
+		txrx_result = dxl_get_result();
+		if(txrx_result!=COMM_RXSUCCESS)
+			printf("Failed read MAX_TORQUE error=%d\n",txrx_result);
+		else
+			printf("MAX_TORQUE=%d\n",max_torque);
+	
+		//==CW_ANGLE_LIMIT,CCW_ANGLE_LIMIT==//
+		cw_angel_lim=dxl_read_word(gMapLAxisID[i],CW_ANGLE_LIMIT_L);
+		txrx_result = dxl_get_result();
+		if(txrx_result!=COMM_RXSUCCESS)
+			printf("Failed read CW_ANGLE_LIMIT error=%d\n",txrx_result);
+		else	
+			printf("CW_ANGLE_LIMIT=%d,degree=%f\n",cw_angel_lim,cw_angel_lim*DEF_RATIO_PUS_TO_DEG);
+
+		ccw_angle_lim=dxl_read_word(gMapLAxisID[i],CCW_ANGLE_LIMIT_L);
+		txrx_result = dxl_get_result();
+		if(txrx_result!=COMM_RXSUCCESS)
+			printf("Failed Read CCW_ANGLE_LIMIT failed error=%d\n",txrx_result);
+		else	
+			printf("CCW_ANGLE_LIMIT=%d,degree=%f\n",ccw_angle_lim,ccw_angle_lim*DEF_RATIO_PUS_TO_DEG);
+		
+
+		//==multi turn offset==//
+		multi_turn_offset=dxl_read_word(gMapLAxisID[i],MULTITURN_OFFSET);
 		txrx_result = dxl_get_result();
 		if(txrx_result!=COMM_RXSUCCESS)
 			printf("Failed Read MULTITURN_OFFSET failed error=%d\n",txrx_result);
@@ -156,104 +260,59 @@ int ROM_Setting() //new
 }
 
 //rt=Read_pos(pos_pus,DEF_UNIT_PUS)
-int Read_pos(float *pos,unsigned char unit)
+int Read_pos(int RLHand,float *pos,unsigned char unit)
 {
 	int i=0;
 	short int pulse=0;
 	int rt=0;
 
-	if(unit==DEF_UNIT_RAD)
+	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
 	{
-		for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+		//read pulse
+		if(RLHand==DEF_RIGHT_HAND)
+			pulse = dxl_read_word(gMapRAxisID[i], PRESENT_POS);
+		else if(RLHand==DEF_LEFT_HAND)
+			pulse = dxl_read_word(gMapLAxisID[i], PRESENT_POS);
+
+		//If communication ok calculate pulse offset and unit transform
+		if(dxl_get_result()!=COMM_RXSUCCESS)
 		{
-			pulse = dxl_read_word(gMapAxisID[i], PRESENT_POS);
-			if(dxl_get_result()!=COMM_RXSUCCESS)
-			{
-				rt=-gMapAxisNO[i];
-				pos[i]=0xffff;
-			}
-			else
-			{
-				pulse-=gr2m_offset_pulse[i]; //mortor to robot offset =>minus offset
+			rt=-gMapAxisNO[i];
+			pos[i]=0xffff;
+		}
+		else
+		{
+			if(RLHand==DEF_RIGHT_HAND)
+				pulse-=gr2m_offset_pulse_R[i]; //motor to robot offset =>minus offset
+			else if(RLHand==DEF_LEFT_HAND)
+				pulse-=gr2m_offset_pulse_L[i];
+
+			if(unit==DEF_UNIT_RAD)
 				pos[i]=pulse*DEF_RATIO_PUS_TO_RAD;
-			}
-		}
-		
-	}
-	else if(unit==DEF_UNIT_DEG)
-	{
-		for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
-		{
-			pulse = dxl_read_word(gMapAxisID[i], PRESENT_POS);
-			if(dxl_get_result()!=COMM_RXSUCCESS)
-			{
-				rt=-gMapAxisNO[i];	
-				pos[i]=0xffff;
-			}
-			else
-			{
-				pulse-=gr2m_offset_pulse[i]; 
+			else if(unit==DEF_UNIT_DEG)
 				pos[i]=pulse*DEF_RATIO_PUS_TO_DEG;
-			}
-		}
-	}
-	else if(unit==DEF_UNIT_PUS)
-	{
-		for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
-		{
-			pulse = dxl_read_word(gMapAxisID[i], PRESENT_POS);
-			if(dxl_get_result()!=COMM_RXSUCCESS)
+			else if(unit==DEF_UNIT_PUS)	
+				pos[i]=pulse;
+			else//non offset pulse
 			{
-				rt=-gMapAxisNO[i];
-				pos[i]=0xffff;
-			}
-			else
-			{
-				pulse-=gr2m_offset_pulse[i]; 
+				if(RLHand==DEF_RIGHT_HAND)
+					pulse+=gr2m_offset_pulse_R[i];
+				else if(RLHand==DEF_LEFT_HAND)
+					pulse+=gr2m_offset_pulse_L[i];
 				pos[i]=pulse;
 			}
 		}
+	}
 		
-	}
-	else
-	{
-		//non offset value
-		for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
-		{
-			pulse = dxl_read_word(gMapAxisID[i], PRESENT_POS);
-			if(dxl_get_result()!=COMM_RXSUCCESS)
-			{
-				rt=-gMapAxisNO[i];
-				pos[i]=0xffff;
-			}
-			else
-			{
-				pos[i]=pulse;
-			}
-		}
-	}
-	
 	return rt;
 }
 
 
 
 
-int Output_to_Dynamixel(const float *Ang_rad,const unsigned short int *velocity) 
+int Output_to_Dynamixel(int RLHand,const float *Ang_rad,const unsigned short int *velocity) 
 {
 	unsigned char i=0;
-
-	//===================================================================//
-	//==limit axis  if not zero ,the return value is the overlimit axis==//
-	//===================================================================//
-	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
-	{
-		if( (Ang_rad[i] > grobot_lim_rad_H[i]) || (Ang_rad[i] < grobot_lim_rad_L[i]) )
-		{
-			DBGMSG(("AXIS%d over limit Ang_rad=%f,grobot_lim_rad_L=%f,grobot_lim_rad_H=%f\n",gMapAxisNO[i],Ang_rad[i],grobot_lim_rad_L[i],grobot_lim_rad_H[i]))
-			return -gMapAxisNO[i];
-		}
-	}
 
 	//===================================================//
 	//==trnasformat to pulse and offset to motor domain==//
@@ -262,7 +321,11 @@ int Output_to_Dynamixel(const float *Ang_rad,const unsigned short int *velocity)
 	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
 	{
 		Ang_pulse[i]=(short int)(Ang_rad[i]*DEF_RATIO_RAD_TO_PUS);
-		Ang_pulse[i]+=gr2m_offset_pulse[i];
+
+		if(RLHand==DEF_RIGHT_HAND)
+			Ang_pulse[i]+=gr2m_offset_pulse_R[i];
+		else if(RLHand==DEF_LEFT_HAND)
+			Ang_pulse[i]+=gr2m_offset_pulse_L[i];
 
 		if( Ang_pulse[i] > DEF_JOINT_MODE_MAX_PULSE )//  0~4095
 		{
@@ -274,25 +337,102 @@ int Output_to_Dynamixel(const float *Ang_rad,const unsigned short int *velocity)
 	//================================//
 	//==output to motor by syncpage===//
 	//===============================//
-	unsigned short int SyncPage1[21]=
+	unsigned short int SyncPageR[21]=
 	{ 
-		ID_AXIS1,(unsigned short int)Ang_pulse[Index_AXIS1],velocity[Index_AXIS1], //ID,goal,velocity
-		ID_AXIS2,(unsigned short int)Ang_pulse[Index_AXIS2],velocity[Index_AXIS2], 
-		ID_AXIS3,(unsigned short int)Ang_pulse[Index_AXIS3],velocity[Index_AXIS3], 
-		ID_AXIS4,(unsigned short int)Ang_pulse[Index_AXIS4],velocity[Index_AXIS4], 
-		ID_AXIS5,(unsigned short int)Ang_pulse[Index_AXIS5],velocity[Index_AXIS5], 
-		ID_AXIS6,(unsigned short int)Ang_pulse[Index_AXIS6],velocity[Index_AXIS6], 
-		ID_AXIS7,(unsigned short int)Ang_pulse[Index_AXIS7],velocity[Index_AXIS7], 
+		ID_RAXIS1,(unsigned short int)Ang_pulse[Index_AXIS1],velocity[Index_AXIS1], //ID,goal,velocity
+		ID_RAXIS2,(unsigned short int)Ang_pulse[Index_AXIS2],velocity[Index_AXIS2], 
+		ID_RAXIS3,(unsigned short int)Ang_pulse[Index_AXIS3],velocity[Index_AXIS3], 
+		ID_RAXIS4,(unsigned short int)Ang_pulse[Index_AXIS4],velocity[Index_AXIS4], 
+		ID_RAXIS5,(unsigned short int)Ang_pulse[Index_AXIS5],velocity[Index_AXIS5], 
+		ID_RAXIS6,(unsigned short int)Ang_pulse[Index_AXIS6],velocity[Index_AXIS6], 
+		ID_RAXIS7,(unsigned short int)Ang_pulse[Index_AXIS7],velocity[Index_AXIS7], 
 	};
 
+	unsigned short int SyncPageL[21]=
+	{ 
+		ID_LAXIS1,(unsigned short int)Ang_pulse[Index_AXIS1],velocity[Index_AXIS1], //ID,goal,velocity
+		ID_LAXIS2,(unsigned short int)Ang_pulse[Index_AXIS2],velocity[Index_AXIS2], 
+		ID_LAXIS3,(unsigned short int)Ang_pulse[Index_AXIS3],velocity[Index_AXIS3], 
+		ID_LAXIS4,(unsigned short int)Ang_pulse[Index_AXIS4],velocity[Index_AXIS4], 
+		ID_LAXIS5,(unsigned short int)Ang_pulse[Index_AXIS5],velocity[Index_AXIS5], 
+		ID_LAXIS6,(unsigned short int)Ang_pulse[Index_AXIS6],velocity[Index_AXIS6], 
+		ID_LAXIS7,(unsigned short int)Ang_pulse[Index_AXIS7],velocity[Index_AXIS7], 
+	};
 	
 #if (DEBUG)
 	//for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
 	//	printf("syncwrite AXIS%d pos=%d velocity=%d\n",gMapAxisNO[i],Ang_pulse[i],velocity[i]);
 #endif
+	if(RLHand==DEF_RIGHT_HAND)
+		syncWrite_x86(GOAL_POSITION,2,SyncPageR,21);//byte syncWrite(byte start_addr, byte num_of_data, int *param, int array_length);
+	else if(RLHand==DEF_LEFT_HAND)
+		syncWrite_x86(GOAL_POSITION,2,SyncPageL,21);//byte syncWrite(byte start_addr, byte num_of_data, int *param, int array_length);
+	
+	
+	return 0;
+}
 
-	syncWrite_x86(GOAL_POSITION,2,SyncPage1,21);//byte syncWrite(byte start_addr, byte num_of_data, int *param, int array_length);
-  
+
+int Output_to_Dynamixel_Dual(const float *Ang_rad_R,const unsigned short int *velocity_R,const float *Ang_rad_L,const unsigned short int *velocity_L) 
+{
+	unsigned char i=0;
+
+	//===================================================//
+	//==trnasformat to pulse and offset to motor domain==//
+	//====================================================//
+	short int Ang_pulse_R[MAX_AXIS_NUM]={0};
+	short int Ang_pulse_L[MAX_AXIS_NUM]={0};
+
+	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	{
+		Ang_pulse_R[i]=(short int)(Ang_rad_R[i]*DEF_RATIO_RAD_TO_PUS);
+		Ang_pulse_L[i]=(short int)(Ang_rad_L[i]*DEF_RATIO_RAD_TO_PUS);
+
+		
+		Ang_pulse_R[i]+=gr2m_offset_pulse_R[i];
+		Ang_pulse_L[i]+=gr2m_offset_pulse_L[i];
+
+		if( Ang_pulse_R[i] > DEF_JOINT_MODE_MAX_PULSE )//  0~4095
+		{
+			DBGMSG(("AXISR%d over range of mortor  Ang_pulse=%d,JOINT_MODE_MIN_PULSE=%d,JOINT_MODE_MAX_PULSE=%d\n",gMapAxisNO[i],Ang_pulse_R[i],DEF_JOINT_MODE_MIN_PULSE,DEF_JOINT_MODE_MAX_PULSE))
+			return -gMapAxisNO[i];
+		}
+		if( Ang_pulse_L[i] > DEF_JOINT_MODE_MAX_PULSE )//  0~4095
+		{
+			DBGMSG(("AXISL%d over range of mortor  Ang_pulse=%d,JOINT_MODE_MIN_PULSE=%d,JOINT_MODE_MAX_PULSE=%d\n",gMapAxisNO[i],Ang_pulse_L[i],DEF_JOINT_MODE_MIN_PULSE,DEF_JOINT_MODE_MAX_PULSE))
+			return -gMapAxisNO[i];
+		}
+	}
+
+	//================================//
+	//==output to motor by syncpage===//
+	//===============================//
+	unsigned short int SyncPageR[42]=
+	{ 
+		ID_RAXIS1,(unsigned short int)Ang_pulse_R[Index_AXIS1],velocity_R[Index_AXIS1], //ID,goal,velocity
+		ID_RAXIS2,(unsigned short int)Ang_pulse_R[Index_AXIS2],velocity_R[Index_AXIS2], 
+		ID_RAXIS3,(unsigned short int)Ang_pulse_R[Index_AXIS3],velocity_R[Index_AXIS3], 
+		ID_RAXIS4,(unsigned short int)Ang_pulse_R[Index_AXIS4],velocity_R[Index_AXIS4], 
+		ID_RAXIS5,(unsigned short int)Ang_pulse_R[Index_AXIS5],velocity_R[Index_AXIS5], 
+		ID_RAXIS6,(unsigned short int)Ang_pulse_R[Index_AXIS6],velocity_R[Index_AXIS6], 
+		ID_RAXIS7,(unsigned short int)Ang_pulse_R[Index_AXIS7],velocity_R[Index_AXIS7], 
+		ID_LAXIS1,(unsigned short int)Ang_pulse_L[Index_AXIS1],velocity_L[Index_AXIS1], 
+		ID_LAXIS2,(unsigned short int)Ang_pulse_L[Index_AXIS2],velocity_L[Index_AXIS2], 
+		ID_LAXIS3,(unsigned short int)Ang_pulse_L[Index_AXIS3],velocity_L[Index_AXIS3], 
+		ID_LAXIS4,(unsigned short int)Ang_pulse_L[Index_AXIS4],velocity_L[Index_AXIS4], 
+		ID_LAXIS5,(unsigned short int)Ang_pulse_L[Index_AXIS5],velocity_L[Index_AXIS5], 
+		ID_LAXIS6,(unsigned short int)Ang_pulse_L[Index_AXIS6],velocity_L[Index_AXIS6], 
+		ID_LAXIS7,(unsigned short int)Ang_pulse_L[Index_AXIS7],velocity_L[Index_AXIS7], 
+	};
+	
+#if (DEBUG)
+	//for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	//	printf("syncwrite AXIS%d pos=%d velocity=%d\n",gMapAxisNO[i],Ang_pulse[i],velocity[i]);
+#endif
+	
+	syncWrite_x86(GOAL_POSITION,2,SyncPageR,42);//byte syncWrite(byte start_addr, byte num_of_data, int *param, int array_length);
+	
+	
 	return 0;
 }
 
@@ -305,9 +445,9 @@ int Output_to_Dynamixel_pulse(const unsigned short int *Ang_pulse,const unsigned
 	//===================================================================//
 	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
 	{
-		if( (Ang_pulse[i] > grobot_lim_pus_H[i]) || (Ang_pulse[i] < grobot_lim_pus_L[i]) )
+		if( (Ang_pulse[i] > grobot_lim_pus_R_High[i]) || (Ang_pulse[i] < grobot_lim_pus_R_Low[i]) )
 		{
-			DBGMSG(("AXIS%d over limit Ang_pus=%d,grobot_lim_pus_L=%d,grobot_lim_pus_H=%d\n",gMapAxisNO[i],Ang_pulse[i],grobot_lim_pus_L[i],grobot_lim_pus_H[i]))
+			DBGMSG(("AXIS%d over limit Ang_pus=%d,grobot_lim_pus_L=%d,grobot_lim_pus_H=%d\n",gMapAxisNO[i],Ang_pulse[i],grobot_lim_pus_R_Low[i],grobot_lim_pus_R_High[i]))
 			return -gMapAxisNO[i];
 		}
 	}
@@ -318,7 +458,7 @@ int Output_to_Dynamixel_pulse(const unsigned short int *Ang_pulse,const unsigned
 	unsigned short int Ang_pulse_with_offset[MAX_AXIS_NUM]={0};
 	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
 	{
-		Ang_pulse_with_offset[i]=Ang_pulse[i]+gr2m_offset_pulse[i];
+		Ang_pulse_with_offset[i]=Ang_pulse[i]+gr2m_offset_pulse_R[i];
 
 		if( Ang_pulse_with_offset[i] > DEF_JOINT_MODE_MAX_PULSE )//  0~4095
 		{
@@ -332,13 +472,13 @@ int Output_to_Dynamixel_pulse(const unsigned short int *Ang_pulse,const unsigned
 	//===============================//
 	unsigned short int SyncPage1[21]=
 	{ 
-		ID_AXIS1,Ang_pulse_with_offset[Index_AXIS1],velocity[Index_AXIS1], //ID,goal,velocity
-		ID_AXIS2,Ang_pulse_with_offset[Index_AXIS2],velocity[Index_AXIS2], 
-		ID_AXIS3,Ang_pulse_with_offset[Index_AXIS3],velocity[Index_AXIS3], 
-		ID_AXIS4,Ang_pulse_with_offset[Index_AXIS4],velocity[Index_AXIS4], 
-		ID_AXIS5,Ang_pulse_with_offset[Index_AXIS5],velocity[Index_AXIS5], 
-		ID_AXIS6,Ang_pulse_with_offset[Index_AXIS6],velocity[Index_AXIS6], 
-		ID_AXIS7,Ang_pulse_with_offset[Index_AXIS7],velocity[Index_AXIS7], 
+		ID_RAXIS1,Ang_pulse_with_offset[Index_AXIS1],velocity[Index_AXIS1], //ID,goal,velocity
+		ID_RAXIS2,Ang_pulse_with_offset[Index_AXIS2],velocity[Index_AXIS2], 
+		ID_RAXIS3,Ang_pulse_with_offset[Index_AXIS3],velocity[Index_AXIS3], 
+		ID_RAXIS4,Ang_pulse_with_offset[Index_AXIS4],velocity[Index_AXIS4], 
+		ID_RAXIS5,Ang_pulse_with_offset[Index_AXIS5],velocity[Index_AXIS5], 
+		ID_RAXIS6,Ang_pulse_with_offset[Index_AXIS6],velocity[Index_AXIS6], 
+		ID_RAXIS7,Ang_pulse_with_offset[Index_AXIS7],velocity[Index_AXIS7], 
 	};
 
 	
@@ -783,25 +923,142 @@ int IK_7DOF_FB7roll(const float linkL[6],const float base[3],const float Pend[3]
 	return 0;
 }
 
-bool AngleOverConstrain(const float theta[MAX_AXIS_NUM],int *OverIndex)
+//================================================================================//
+//==prevent angle over constrain.If over occur,over_index shows which axis over ==//
+//================================================================================//
+bool AngleOverConstrain(int RLHand, const float theta[MAX_AXIS_NUM],int *OverIndex)
 {
-	//theta_L=[-80 -180 -105 0 -30 -37 -180];
-    //theta_H=[180 10 250 180 90 90 180];
 	bool bOver=false;
 	*OverIndex=NULL;
-    for(int index=Index_AXIS1;index<=Index_AXIS7;index++)
+
+	if (RLHand ==DEF_RIGHT_HAND)
 	{
-        if (theta[index]<grobot_lim_rad_L[index] || theta[index]>grobot_lim_rad_H[index])  
+		for(int index=Index_AXIS1;index<=Index_AXIS7;index++)
 		{
-			bOver=true;
-            *OverIndex=index;
-            break;
+			if (theta[index]<grobot_lim_rad_R_Low[index] || theta[index]>grobot_lim_rad_R_High[index])  
+			{
+				bOver=true;
+				*OverIndex=index;
+				break;
+			}
 		}
 	}
+	else if(RLHand ==DEF_LEFT_HAND)
+	{
+		for(int index=Index_AXIS1;index<=Index_AXIS7;index++)
+		{
+			if (theta[index]<grobot_lim_rad_L_Low[index] || theta[index]>grobot_lim_rad_L_High[index])  
+			{
+				bOver=true;
+				*OverIndex=index;
+				break;
+			}
+		}
+	}
+
+
 	return bOver;
 }
 
-//stanley
+
+int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_deg)  //莱赣璶Τ硉把计
+{
+	const float linkL[6]={L0,L1,L2,L3,L4,L5};
+	float base[3]={0.0};
+	//float Pend[3]={x,y,z};
+	float Pose_rad[3]={Pose_deg[DEF_ALPHA]*DEF_RATIO_DEG_TO_RAD,Pose_deg[DEF_BETA]*DEF_RATIO_DEG_TO_RAD,Pose_deg[DEF_GAMMA]*DEF_RATIO_DEG_TO_RAD};
+	float Rednt_alpha=redant_alpha_deg*DEF_RATIO_DEG_TO_RAD;
+	float theta[7]={0};
+	int rt=0;
+
+	//inverse kinematics
+	if(RLHand==DEF_RIGHT_HAND)
+		base[DEF_Y]=-L0;
+	else if(RLHand==DEF_LEFT_HAND)
+		base[DEF_Y]=L0;
+
+	rt= IK_7DOF_FB7roll(linkL,base,Pend,Pose_rad,Rednt_alpha,theta);
+	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+		DBGMSG(("axis %d=%f\n",gMapAxisNO[i],theta[i]))
+	
+	//==prevent angle over constrain
+	int over_index=0;
+	bool bOver=AngleOverConstrain(RLHand,theta,&over_index);
+	if(bOver)
+	{
+		if(RLHand==DEF_RIGHT_HAND)
+			DBGMSG(("axis%d=%f,over constrain, %f< axis%d < %f\n",gMapAxisNO[over_index],theta[over_index]*DEF_RATIO_RAD_TO_DEG,grobot_lim_rad_R_Low[over_index]*DEF_RATIO_RAD_TO_DEG,gMapAxisNO[over_index],grobot_lim_rad_R_High[over_index]*DEF_RATIO_RAD_TO_DEG))
+		else if(RLHand==DEF_LEFT_HAND)
+			DBGMSG(("axis%d=%f,over constrain, %f< axis%d < %f\n",gMapAxisNO[over_index],theta[over_index]*DEF_RATIO_RAD_TO_DEG,grobot_lim_rad_L_Low[over_index]*DEF_RATIO_RAD_TO_DEG,gMapAxisNO[over_index],grobot_lim_rad_L_High[over_index]*DEF_RATIO_RAD_TO_DEG))
+
+		return 1;
+	}
+
+	//output to motor
+	unsigned short int velocity[MAX_AXIS_NUM]={20,20,20,20,20,20};
+	
+	rt=Output_to_Dynamixel(RLHand,theta,velocity); 
+
+	return 0;
+}
+
+
+int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R,float Pend_L[3],float Pose_deg_L[3],float Rednt_alpha_deg_L)  //莱赣璶Τ硉把计
+{
+	const float linkL[6]={L0,L1,L2,L3,L4,L5};
+	float base_R[3]={0,-L0,0};
+	float base_L[3]={0,L0,0};
+
+	float Pose_rad_R[3]={Pose_deg_R[DEF_ALPHA]*DEF_RATIO_DEG_TO_RAD,Pose_deg_R[DEF_BETA]*DEF_RATIO_DEG_TO_RAD,Pose_deg_R[DEF_GAMMA]*DEF_RATIO_DEG_TO_RAD};
+	float Pose_rad_L[3]={Pose_deg_L[DEF_ALPHA]*DEF_RATIO_DEG_TO_RAD,Pose_deg_L[DEF_BETA]*DEF_RATIO_DEG_TO_RAD,Pose_deg_L[DEF_GAMMA]*DEF_RATIO_DEG_TO_RAD};
+
+	float Rednt_alpha_rad_R=Rednt_alpha_deg_R*DEF_RATIO_DEG_TO_RAD;
+	float Rednt_alpha_rad_L=Rednt_alpha_deg_L*DEF_RATIO_DEG_TO_RAD;
+
+	float theta_R[7]={0};
+	float theta_L[7]={0};
+	int rt=0;
+	int over_index=0;
+	bool bOver=false;
+
+	//inverse kinematics right hand
+	rt= IK_7DOF_FB7roll(linkL,base_R,Pend_R,Pose_rad_R,Rednt_alpha_rad_R,theta_R);
+	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+		DBGMSG(("axis %d=%f\n",gMapAxisNO[i],theta_R[i]))
+
+	//==prevent angle over constrain right hand 
+	over_index=0;
+	bOver=AngleOverConstrain(DEF_RIGHT_HAND,theta_R,&over_index);
+	if(bOver)
+	{
+		DBGMSG(("axis%d=%f,over constrain, %f< axis%d < %f\n",gMapAxisNO[over_index],theta_R[over_index]*DEF_RATIO_RAD_TO_DEG,grobot_lim_rad_R_Low[over_index]*DEF_RATIO_RAD_TO_DEG,gMapAxisNO[over_index],grobot_lim_rad_R_High[over_index]*DEF_RATIO_RAD_TO_DEG))
+		return 1;
+	}
+
+	//inverse kinematics left hand
+	rt= IK_7DOF_FB7roll(linkL,base_L,Pend_L,Pose_rad_L,Rednt_alpha_rad_L,theta_L);
+	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+		DBGMSG(("axis %d=%f\n",gMapAxisNO[i],theta_L[i]))
+	
+	//==prevent angle over constrain left hand 
+	over_index=0;
+	bOver=AngleOverConstrain(DEF_LEFT_HAND,theta_L,&over_index);
+	if(bOver)
+	{
+		DBGMSG(("axis%d=%f,over constrain, %f< axis%d < %f\n",gMapAxisNO[over_index],theta_L[over_index]*DEF_RATIO_RAD_TO_DEG,grobot_lim_rad_L_Low[over_index]*DEF_RATIO_RAD_TO_DEG,gMapAxisNO[over_index],grobot_lim_rad_L_High[over_index]*DEF_RATIO_RAD_TO_DEG))
+		return 1;
+	}
+
+
+	//output to motor
+	unsigned short int velocity_R[MAX_AXIS_NUM]={20,20,20,20,20,20};
+	unsigned short int velocity_L[MAX_AXIS_NUM]={20,20,20,20,20,20};
+	
+	rt=Output_to_Dynamixel_Dual(theta_R,velocity_R,theta_L,velocity_L); 
+
+	return 0;
+}
+
 int syncWrite_x86(unsigned short int start_addr, unsigned short int data_length, unsigned short int *param, unsigned short int param_length) // WORD(16bit) syncwrite() for DXL  stanley
 {
     //syncWrite_u16base(GOAL_POSITION,2,SyncPage1,21);//byte syncWrite(byte start_addr, byte num_of_data, int *param, int array_length);
@@ -882,4 +1139,3 @@ int DXL_Terminate_x86()
 	
 	return 0;
 }
-
