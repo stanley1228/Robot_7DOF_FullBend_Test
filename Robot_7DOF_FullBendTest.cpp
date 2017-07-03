@@ -148,7 +148,7 @@ int TestAction()
 	//int rt = IK_7DOF_nonFB(L1,L2,L3,0,0,0,60,0,0,0,0,0,(float)-M_PI*0.5,theta);
 	
 	//int IK_7DOF_FB7roll(const float linkL[6],const float base[3],const float Pend[3],const float PoseAngle[3],const float Rednt_alpha,float* out_theta);
-	int rt = IK_7DOF_FB7roll(linkL,base,Pend,PoseAngle,Rednt_alpha,theta);
+	int rt = IK_7DOF_FB7roll(DEF_RIGHT_HAND,linkL,base,Pend,PoseAngle,Rednt_alpha,theta);
 	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
 		printf("axis %d=%f\n",gMapAxisNO[i],theta[i]);
 
@@ -256,18 +256,18 @@ int clockTest()
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	int rt=DXL_Initial_x86();
-	if(rt==0)
-		return 0;
+	//int rt=DXL_Initial_x86();
+	//if(rt==0)
+	//	return 0;
 
 
-	ROM_Setting_Dual();
+	//ROM_Setting_Dual();
 
 
-	for(int i=0;i<4;i++)
-	{
+	//for(int i=0;i<4;i++)
+	//{
 		TestRectangle_Dual();
-	}
+	//}
 	//TestOutput();
 
 	//
@@ -279,7 +279,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//TestReadPos();
 	getchar();
 
-	DXL_Terminate_x86();
+	//DXL_Terminate_x86();
 	
 	return 0;
 }
