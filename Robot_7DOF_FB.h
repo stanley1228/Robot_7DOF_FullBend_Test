@@ -208,8 +208,8 @@ enum{
 #define AXISR7_ROBOT_LIM_DEG_L (-180)
 #define AXISR7_ROBOT_LIM_DEG_H 180
 //left
-#define AXISL1_ROBOT_LIM_DEG_L (-80)
-#define AXISL1_ROBOT_LIM_DEG_H 170
+#define AXISL1_ROBOT_LIM_DEG_L (-170)
+#define AXISL1_ROBOT_LIM_DEG_H 80
 #define AXISL2_ROBOT_LIM_DEG_L (-10)
 #define AXISL2_ROBOT_LIM_DEG_H 180
 #define AXISL3_ROBOT_LIM_DEG_L (-170)
@@ -401,7 +401,7 @@ Matrix R_z1x2y3(float alpha,float beta,float gamma);
 float norm(const Matrix& v);
 Matrix Rogridues(float theta,const Matrix& V_A);
 int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_base,const float y_base,const float z_base,const float x_end,const float y_end,const float z_end,const float alpha,const float beta,const float gamma,const float Rednt_alpha,float* theta);
-int IK_7DOF_FB7roll(const float linkL[6],const float base[3],const float Pend[3],const float PoseAngle[3],const float Rednt_alpha,float* out_theta);
+int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const float Pend[3],const float PoseAngle[3],const float Rednt_alpha,float* out_theta);
 bool AngleOverConstrain(int RLHand,const float theta[MAX_AXIS_NUM],int *OverIndex);
 int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_deg);
 int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R,float Pend_L[3],float Pose_deg_L[3],float Rednt_alpha_deg_L);  //應該要有一個速度參數
