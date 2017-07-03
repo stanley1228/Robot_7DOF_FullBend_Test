@@ -17,10 +17,67 @@
 //==MAX AXIS
 //==========
 #define MAX_AXIS_NUM  7
+#define MAX_AXIS_NUM_DUAL  (MAX_AXIS_NUM*2)
 
+#define DEF_RIGHT_HAND 1
+#define DEF_LEFT_HAND 2
+
+
+//==========
+//==Axis frame
+//==========
+#define DEF_X 0
+#define DEF_Y 1
+#define DEF_Z 2
+
+#define DEF_ALPHA 0
+#define DEF_BETA 1
+#define DEF_GAMMA 2
 //===========================
 //==Axis index,ID,NO mapping
 //==========================
+//enum{
+//	ID_AXIS1=1,
+//	ID_AXIS2,
+//	ID_AXIS3,
+//	ID_AXIS4,
+//	ID_AXIS5,
+//	ID_AXIS6,
+//	ID_AXIS7
+//};
+
+//enum{
+//	NO_AXIS1=1,
+//	NO_AXIS2,
+//	NO_AXIS3,
+//	NO_AXIS4,
+//	NO_AXIS5,
+//	NO_AXIS6,
+//	NO_AXIS7
+//};
+//
+//
+//static const unsigned char gMapAxisNO[MAX_AXIS_NUM]=
+//{
+//	NO_AXIS1,
+//	NO_AXIS2,
+//	NO_AXIS3,
+//	NO_AXIS4,
+//	NO_AXIS5,
+//	NO_AXIS6,
+//	NO_AXIS7
+//};
+//static const unsigned char gMapAxisID[MAX_AXIS_NUM]=
+//{
+//	ID_AXIS1,
+//	ID_AXIS2,
+//	ID_AXIS3,
+//	ID_AXIS4,
+//	ID_AXIS5,
+//	ID_AXIS6,
+//	ID_AXIS7
+//};
+
 enum{
 	Index_AXIS1=0,
 	Index_AXIS2,
@@ -28,17 +85,24 @@ enum{
 	Index_AXIS4,
 	Index_AXIS5,
 	Index_AXIS6,
-	Index_AXIS7
+	Index_AXIS7,
 };
 
 enum{
-	ID_AXIS1=1,
-	ID_AXIS2,
-	ID_AXIS3,
-	ID_AXIS4,
-	ID_AXIS5,
-	ID_AXIS6,
-	ID_AXIS7
+	ID_RAXIS1=1,
+	ID_RAXIS2,
+	ID_RAXIS3,
+	ID_RAXIS4,
+	ID_RAXIS5,
+	ID_RAXIS6,
+	ID_RAXIS7,
+	ID_LAXIS1,
+	ID_LAXIS2,
+	ID_LAXIS3,
+	ID_LAXIS4,
+	ID_LAXIS5,
+	ID_LAXIS6,
+	ID_LAXIS7
 };
 
 enum{
@@ -62,15 +126,28 @@ static const unsigned char gMapAxisNO[MAX_AXIS_NUM]=
 	NO_AXIS6,
 	NO_AXIS7
 };
-static const unsigned char gMapAxisID[MAX_AXIS_NUM]=
+
+
+static const unsigned char gMapRAxisID[MAX_AXIS_NUM_DUAL]=
 {
-	ID_AXIS1,
-	ID_AXIS2,
-	ID_AXIS3,
-	ID_AXIS4,
-	ID_AXIS5,
-	ID_AXIS6,
-	ID_AXIS7
+	ID_RAXIS1,
+	ID_RAXIS2,
+	ID_RAXIS3,
+	ID_RAXIS4,
+	ID_RAXIS5,
+	ID_RAXIS6,
+	ID_RAXIS7
+};
+
+static const unsigned char gMapLAxisID[MAX_AXIS_NUM_DUAL]=
+{
+	ID_LAXIS1,
+	ID_LAXIS2,
+	ID_LAXIS3,
+	ID_LAXIS4,
+	ID_LAXIS5,
+	ID_LAXIS6,
+	ID_LAXIS7
 };
 
 
@@ -96,98 +173,190 @@ enum{
 //=====================================
 //==robot hard ware dependent parameter
 //=====================================
-
 //==robot to Motor offset==//  //robot pos=motor position -M2R_OFFSET
-
-#define AXIS1_R2M_OFFSET_DEG 180
-#define AXIS2_R2M_OFFSET_DEG 270
-#define AXIS3_R2M_OFFSET_DEG 180
-#define AXIS4_R2M_OFFSET_DEG 90
-#define AXIS5_R2M_OFFSET_DEG 180
-#define AXIS6_R2M_OFFSET_DEG 90
-#define AXIS7_R2M_OFFSET_DEG 90
+//right
+#define AXISR1_R2M_OFFSET_DEG 180
+#define AXISR2_R2M_OFFSET_DEG 270
+#define AXISR3_R2M_OFFSET_DEG 180
+#define AXISR4_R2M_OFFSET_DEG 90
+#define AXISR5_R2M_OFFSET_DEG 180
+#define AXISR6_R2M_OFFSET_DEG 90
+#define AXISR7_R2M_OFFSET_DEG 90
+//left
+#define AXISL1_R2M_OFFSET_DEG 180
+#define AXISL2_R2M_OFFSET_DEG 270
+#define AXISL3_R2M_OFFSET_DEG 180
+#define AXISL4_R2M_OFFSET_DEG 90
+#define AXISL5_R2M_OFFSET_DEG 180
+#define AXISL6_R2M_OFFSET_DEG 90
+#define AXISL7_R2M_OFFSET_DEG 90
 
 //==robot angle limit==//
-#define AXIS1_ROBOT_LIM_DEG_L (-80)
-#define AXIS1_ROBOT_LIM_DEG_H 170
-#define AXIS2_ROBOT_LIM_DEG_L (-180)
-#define AXIS2_ROBOT_LIM_DEG_H 10
-#define AXIS3_ROBOT_LIM_DEG_L (-105)
-#define AXIS3_ROBOT_LIM_DEG_H 170
-#define AXIS4_ROBOT_LIM_DEG_L 0	
-#define AXIS4_ROBOT_LIM_DEG_H 170	
-#define AXIS5_ROBOT_LIM_DEG_L (-30)
-#define AXIS5_ROBOT_LIM_DEG_H 90
-#define AXIS6_ROBOT_LIM_DEG_L (-37)
-#define AXIS6_ROBOT_LIM_DEG_H 90
-#define AXIS7_ROBOT_LIM_DEG_L (-180)
-#define AXIS7_ROBOT_LIM_DEG_H 180
-
+//right
+#define AXISR1_ROBOT_LIM_DEG_L (-80)
+#define AXISR1_ROBOT_LIM_DEG_H 170
+#define AXISR2_ROBOT_LIM_DEG_L (-180)
+#define AXISR2_ROBOT_LIM_DEG_H 10
+#define AXISR3_ROBOT_LIM_DEG_L (-105)
+#define AXISR3_ROBOT_LIM_DEG_H 170
+#define AXISR4_ROBOT_LIM_DEG_L 0	
+#define AXISR4_ROBOT_LIM_DEG_H 170	
+#define AXISR5_ROBOT_LIM_DEG_L (-30)
+#define AXISR5_ROBOT_LIM_DEG_H 90
+#define AXISR6_ROBOT_LIM_DEG_L (-37)
+#define AXISR6_ROBOT_LIM_DEG_H 90
+#define AXISR7_ROBOT_LIM_DEG_L (-180)
+#define AXISR7_ROBOT_LIM_DEG_H 180
+//left
+#define AXISL1_ROBOT_LIM_DEG_L (-80)
+#define AXISL1_ROBOT_LIM_DEG_H 170
+#define AXISL2_ROBOT_LIM_DEG_L (-10)
+#define AXISL2_ROBOT_LIM_DEG_H 180
+#define AXISL3_ROBOT_LIM_DEG_L (-170)
+#define AXISL3_ROBOT_LIM_DEG_H 105
+#define AXISL4_ROBOT_LIM_DEG_L 0	
+#define AXISL4_ROBOT_LIM_DEG_H 170	
+#define AXISL5_ROBOT_LIM_DEG_L (-90)
+#define AXISL5_ROBOT_LIM_DEG_H 30
+#define AXISL6_ROBOT_LIM_DEG_L (-37)
+#define AXISL6_ROBOT_LIM_DEG_H 90
+#define AXISL7_ROBOT_LIM_DEG_L (-180)
+#define AXISL7_ROBOT_LIM_DEG_H 180
 
 //==robot TORQUE limit==//  0~1023
-#define AXIS1_MAX_TORQUE 614	//60%
-#define AXIS2_MAX_TORQUE 430
-#define AXIS3_MAX_TORQUE 300	//40%
-#define AXIS4_MAX_TORQUE 415	//40%
-#define AXIS5_MAX_TORQUE 55
-#define AXIS6_MAX_TORQUE 200
-#define AXIS7_MAX_TORQUE 55
+//right
+#define AXISR1_MAX_TORQUE 614	//60%
+#define AXISR2_MAX_TORQUE 430
+#define AXISR3_MAX_TORQUE 300	//40%
+#define AXISR4_MAX_TORQUE 415	//40%
+#define AXISR5_MAX_TORQUE 55
+#define AXISR6_MAX_TORQUE 200
+#define AXISR7_MAX_TORQUE 55
+//left
+#define AXISL1_MAX_TORQUE 614	//60%
+#define AXISL2_MAX_TORQUE 430
+#define AXISL3_MAX_TORQUE 300	//40%
+#define AXISL4_MAX_TORQUE 415	//40%
+#define AXISL5_MAX_TORQUE 55
+#define AXISL6_MAX_TORQUE 200
+#define AXISL7_MAX_TORQUE 55
 
-static const unsigned short int gr2m_offset_pulse[MAX_AXIS_NUM]=
+//==define right hand or left hand==//
+#define DEF_RIGHT_HAND	1
+#define DEF_LEFT_HAND	2
+
+static const unsigned short int gr2m_offset_pulse_R[MAX_AXIS_NUM]=
 {
-	(unsigned short int)(AXIS1_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
-	(unsigned short int)(AXIS2_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
-	(unsigned short int)(AXIS3_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
-	(unsigned short int)(AXIS4_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
-	(unsigned short int)(AXIS5_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
-	(unsigned short int)(AXIS6_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
-	(unsigned short int)(AXIS7_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS)
+	(unsigned short int)(AXISR1_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
+	(unsigned short int)(AXISR2_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
+	(unsigned short int)(AXISR3_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
+	(unsigned short int)(AXISR4_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
+	(unsigned short int)(AXISR5_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
+	(unsigned short int)(AXISR6_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
+	(unsigned short int)(AXISR7_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS)
 };
 
-
-static const float grobot_lim_rad_L[MAX_AXIS_NUM]=
+static const unsigned short int gr2m_offset_pulse_L[MAX_AXIS_NUM]=
 {
-	AXIS1_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
-	AXIS2_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
-	AXIS3_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
-	AXIS4_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
-	AXIS5_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
-	AXIS6_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
-	AXIS7_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD
+	(unsigned short int)(AXISL1_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
+	(unsigned short int)(AXISL2_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
+	(unsigned short int)(AXISL3_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
+	(unsigned short int)(AXISL4_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
+	(unsigned short int)(AXISL5_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
+	(unsigned short int)(AXISL6_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS),
+	(unsigned short int)(AXISL7_R2M_OFFSET_DEG*DEF_RATIO_DEG_TO_PUS)
 };
 
-static const float grobot_lim_rad_H[MAX_AXIS_NUM]=
+//right hand
+static const float grobot_lim_rad_R_Low[MAX_AXIS_NUM]=
 {
-	AXIS1_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
-	AXIS2_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
-	AXIS3_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
-	AXIS4_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
-	AXIS5_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
-	AXIS6_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
-	AXIS7_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD
+	AXISR1_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
+	AXISR2_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
+	AXISR3_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
+	AXISR4_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
+	AXISR5_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
+	AXISR6_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
+	AXISR7_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD
 };
 
-static const float grobot_lim_pus_L[MAX_AXIS_NUM]=
+static const float grobot_lim_rad_R_High[MAX_AXIS_NUM]=
 {
-	AXIS1_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
-	AXIS2_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
-	AXIS3_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
-	AXIS4_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
-	AXIS5_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
-	AXIS6_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
-	AXIS7_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS
+	AXISR1_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
+	AXISR2_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
+	AXISR3_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
+	AXISR4_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
+	AXISR5_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
+	AXISR6_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
+	AXISR7_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD
 };
 
-static const float grobot_lim_pus_H[MAX_AXIS_NUM]=
+static const float grobot_lim_pus_R_Low[MAX_AXIS_NUM]=
 {
-	AXIS1_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
-	AXIS2_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
-	AXIS3_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
-	AXIS4_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
-	AXIS5_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
-	AXIS6_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
-	AXIS7_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS
+	AXISR1_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
+	AXISR2_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
+	AXISR3_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
+	AXISR4_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
+	AXISR5_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
+	AXISR6_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
+	AXISR7_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS
 };
+
+static const float grobot_lim_pus_R_High[MAX_AXIS_NUM]=
+{
+	AXISR1_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
+	AXISR2_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
+	AXISR3_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
+	AXISR4_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
+	AXISR5_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
+	AXISR6_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
+	AXISR7_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS
+};
+
+//left hand
+static const float grobot_lim_rad_L_Low[MAX_AXIS_NUM]=
+{
+	AXISL1_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
+	AXISL2_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
+	AXISL3_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
+	AXISL4_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
+	AXISL5_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
+	AXISL6_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD,
+	AXISL7_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_RAD
+};
+
+static const float grobot_lim_rad_L_High[MAX_AXIS_NUM]=
+{
+	AXISL1_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
+	AXISL2_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
+	AXISL3_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
+	AXISL4_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
+	AXISL5_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
+	AXISL6_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD,
+	AXISL7_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_RAD
+};
+
+static const float grobot_lim_pus_L_Low[MAX_AXIS_NUM]=
+{
+	AXISL1_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
+	AXISL2_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
+	AXISL3_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
+	AXISL4_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
+	AXISL5_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
+	AXISL6_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS,
+	AXISL7_ROBOT_LIM_DEG_L*DEF_RATIO_DEG_TO_PUS
+};
+
+static const float grobot_lim_pus_L_High[MAX_AXIS_NUM]=
+{
+	AXISL1_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
+	AXISL2_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
+	AXISL3_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
+	AXISL4_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
+	AXISL5_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
+	AXISL6_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS,
+	AXISL7_ROBOT_LIM_DEG_H*DEF_RATIO_DEG_TO_PUS
+};
+
 
 //=================================
 //==morot max pulse in joint mode
@@ -222,15 +391,20 @@ static const float grobot_lim_pus_H[MAX_AXIS_NUM]=
 //==========
 unsigned char getMapAxisNO(unsigned char index); //index 0~ (MAX_AXIS_NUM-1)
 unsigned char getMapAxisID(unsigned char index);
-int ROM_Setting();
-int Read_pos(float *pos,unsigned char unit);
-int Output_to_Dynamixel(const float *Ang_rad,const unsigned short int *velocity) ;
+int ROM_Setting_Dual();
+int Read_pos(int RLHand,float *pos,unsigned char unit);
+int Output_to_Dynamixel(int RLHand,const float *Ang_rad,const unsigned short int *velocity) ;
+int Output_to_Dynamixel_Dual(const float *Ang_rad_R,const unsigned short int *velocity_R,const float *Ang_rad_L,const unsigned short int *velocity_L);
+int Output_to_Dynamixel_pulse(const unsigned short int *Ang_pulse,const unsigned short int *velocity);
+
 Matrix R_z1x2y3(float alpha,float beta,float gamma);
 float norm(const Matrix& v);
 Matrix Rogridues(float theta,const Matrix& V_A);
 int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_base,const float y_base,const float z_base,const float x_end,const float y_end,const float z_end,const float alpha,const float beta,const float gamma,const float Rednt_alpha,float* theta);
 int IK_7DOF_FB7roll(const float linkL[6],const float base[3],const float Pend[3],const float PoseAngle[3],const float Rednt_alpha,float* out_theta);
-bool AngleOverConstrain(const float theta[MAX_AXIS_NUM],int *OverIndex);
+bool AngleOverConstrain(int RLHand,const float theta[MAX_AXIS_NUM],int *OverIndex);
+int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_deg);
+int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R,float Pend_L[3],float Pose_deg_L[3],float Rednt_alpha_deg_L);  //應該要有一個速度參數
 
 
 //dynamixel use
