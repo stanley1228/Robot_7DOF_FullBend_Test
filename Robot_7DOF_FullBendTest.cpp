@@ -12,38 +12,84 @@
 using namespace std;
 
 
-
-
-
-int MoveToPoint(float x,float y,float z,float alpha_deg,float beta_deg,float gamma_deg,float redant_alpha_deg)  //應該要有一個速度參數
+#define DEF_DESCRETE_POINT 90
+int TestRectangle_Dual()
 {
-	const float linkL[6]={L0,L1,L2,L3,L4,L5};
-	const float base[3]={0.0};
-	float Pend[3]={x,y,z};
-	float PoseAngle[3]={alpha_deg*DEF_RATIO_DEG_TO_RAD,beta_deg*DEF_RATIO_DEG_TO_RAD,gamma_deg*DEF_RATIO_DEG_TO_RAD};
-	float Rednt_alpha=redant_alpha_deg*DEF_RATIO_DEG_TO_RAD;
-	float theta[7]={0};
+	float O_R[3]={500,-50 ,0};
+	float Q_R[3]={500,-200,0};
+	float R_R[3]={500,-200,-220};
+	float S_R[3]={500,-50 ,-220};
 
-	//inverse kinematics
-	int rt = IK_7DOF_FB7roll(linkL,base,Pend,PoseAngle,Rednt_alpha,theta);
-	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
-		DBGMSG(("axis %d=%f\n",gMapAxisNO[i],theta[i]))
+	float O_L[3]={500,50 ,0};
+	float Q_L[3]={500,200,0};
+	float R_L[3]={500,200,-220};
+	float S_L[3]={500,50 ,-220};
+ 
+	float Pend_R[3]={0,0,0};
+	float pose_deg_R[3]={60,0,0};
+	float Rednt_alpha_R=-90;
 
-	//AngleOverConstrain
-	int over_index=0;
-	bool bOver=AngleOverConstrain(theta,&over_index);
-	if(bOver)
-		DBGMSG(("axis%d=%f,over constrain, %f< axis%d < %f\n",gMapAxisNO[over_index],theta[over_index]*DEF_RATIO_RAD_TO_DEG,grobot_lim_rad_L[over_index]*DEF_RATIO_RAD_TO_DEG,gMapAxisNO[over_index],grobot_lim_rad_H[over_index]*DEF_RATIO_RAD_TO_DEG));  
+	float Pend_L[3]={0,0,0};
+	float pose_deg_L[3]={-60,0,0};
+	float Rednt_alpha_L=90;
 
-	unsigned short int velocity[MAX_AXIS_NUM]={20,20,20,20,20,20};
+
+	//move to initial point
+	MoveToPoint(DEF_RIGHT_HAND,O_R,pose_deg_R,Rednt_alpha_R);
+	MoveToPoint(DEF_LEFT_HAND,O_L,pose_deg_L,Rednt_alpha_L);
+	Sleep(3000);
+
+	//畫正方形做IK 測試
+	for(int t=0;t<=DEF_DESCRETE_POINT;t++)
+	{
+		if(t<=25)
+		{
+			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
+			{
+				Pend_R[f]=O_R[f]+(Q_R[f]-O_R[f])*t/25; 
+				Pend_L[f]=O_L[f]+(Q_L[f]-O_L[f])*t/25; 
+			}
+		}
+		else if(t<=50)
+		{
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=Q_R[f]+(R_R[f]-Q_R[f])*(t-25)/25;
+				Pend_L[f]=Q_L[f]+(R_L[f]-Q_L[f])*(t-25)/25;
+			}
+		}
+		else if(t<=75)
+		{
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=R_R[f]+(S_R[f]-R_R[f])*(t-50)/25;
+				Pend_L[f]=R_L[f]+(S_L[f]-R_L[f])*(t-50)/25;
+			}
+		}
+		else 
+		{
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=S_R[f]+(O_R[f]-S_R[f])*(t-75)/15;
+				Pend_L[f]=S_L[f]+(O_L[f]-S_L[f])*(t-75)/15;
+			}
+		}
 	
-	//output to motor
-	rt=Output_to_Dynamixel(theta,velocity); 
+		Sleep(100);
+		MoveToPoint_Dual(Pend_R,pose_deg_R,Rednt_alpha_R,Pend_L,pose_deg_L,Rednt_alpha_L);
+		//DBGMSG(("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]))
+		printf("Pend_R[%d]=[%f,%f,%f],Pend_L[%d]=[%f,%f,%f]\n",t,Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z],Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
+	}
 
 	return 0;
+
 }
 
-#define DEF_DESCRETE_POINT 90
+
+
+
+
+
 int TestRectangle()
 {
 	//把此路徑分成90份
@@ -52,10 +98,8 @@ int TestRectangle()
 	float R[3]={500,-200,-150};
 	float S[3]={500,-50,-150};
 	float point[3]={0,0,0};
- 
-	//Path=zeros(DEF_DESCRETE_POINT,3);//規畫的路徑點
-	//PathPoint=zeros(DEF_DESCRETE_POINT,3);//記錄實際上的點，畫圖使用
-	//PathTheta=zeros(DEF_DESCRETE_POINT,7);//記錄每軸角度，畫圖使用
+	float pose_deg[3]={30,0,0};
+	
 
 	 //畫正方形做IK FK測試
 	for(int t=1;t<=DEF_DESCRETE_POINT;t++)
@@ -82,7 +126,7 @@ int TestRectangle()
 		}
 	
 		Sleep(100);
-		MoveToPoint(point[0],point[1],point[2],30,0,0,-90);
+		MoveToPoint(DEF_RIGHT_HAND,point,pose_deg,-90);
 		//DBGMSG(("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]))
 		printf("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]);
 	}
@@ -110,15 +154,15 @@ int TestAction()
 
 	//AngleOverConstrain
 	int over_index=0;
-	bool bOver=AngleOverConstrain(theta,&over_index);
+	bool bOver=AngleOverConstrain(DEF_RIGHT_HAND,theta,&over_index);
 	if(bOver)
 	{
-		printf("axis%d=%f,over constrain, %f< axis%d < %f\n",gMapAxisNO[over_index],theta[over_index]*DEF_RATIO_RAD_TO_DEG,grobot_lim_rad_L[over_index]*DEF_RATIO_RAD_TO_DEG,gMapAxisNO[over_index],grobot_lim_rad_H[over_index]*DEF_RATIO_RAD_TO_DEG);  
+		printf("axis%d=%f,over constrain, %f< axis%d < %f\n",gMapAxisNO[over_index],theta[over_index]*DEF_RATIO_RAD_TO_DEG,grobot_lim_rad_R_Low[over_index]*DEF_RATIO_RAD_TO_DEG,gMapAxisNO[over_index],grobot_lim_rad_R_High[over_index]*DEF_RATIO_RAD_TO_DEG);  
 	}	
 
 	unsigned short int velocity[MAX_AXIS_NUM]={10,10,10,10,10,10,10};
 	
-	rt=Output_to_Dynamixel(theta,velocity); 
+	rt=Output_to_Dynamixel(DEF_RIGHT_HAND,theta,velocity); 
 
 	return 0;
 }
@@ -131,7 +175,7 @@ int TestOutput()
 	unsigned short int velocity[MAX_AXIS_NUM]={10,10,10,50,50,0,50};
 	float theta[7]={60*DEF_RATIO_DEG_TO_RAD,15*DEF_RATIO_DEG_TO_RAD,60*DEF_RATIO_DEG_TO_RAD,0,0,0,0};
 	
-	rt=Output_to_Dynamixel(theta,velocity); 
+	rt=Output_to_Dynamixel(DEF_RIGHT_HAND,theta,velocity); 
 
 	return 0;
 }
@@ -146,13 +190,13 @@ int TestSyncwrite()
 	short int velocity[MAX_AXIS_NUM]={50,50,50,50,50,0,50};
 	unsigned short int SyncPage1[21]=
 	{ 
-		ID_AXIS1,(unsigned short int)Ang_pulse[Index_AXIS1],velocity[Index_AXIS1], //ID,goal,velocity
-		ID_AXIS2,(unsigned short int)Ang_pulse[Index_AXIS2],velocity[Index_AXIS2], 
-		ID_AXIS3,(unsigned short int)Ang_pulse[Index_AXIS3],velocity[Index_AXIS3], 
-		ID_AXIS4,(unsigned short int)Ang_pulse[Index_AXIS4],velocity[Index_AXIS4], 
-		ID_AXIS5,(unsigned short int)Ang_pulse[Index_AXIS5],velocity[Index_AXIS5], 
-		ID_AXIS6,(unsigned short int)Ang_pulse[Index_AXIS6],velocity[Index_AXIS6], 
-		ID_AXIS7,(unsigned short int)Ang_pulse[Index_AXIS7],velocity[Index_AXIS7], 
+		gMapRAxisID[Index_AXIS1],(unsigned short int)Ang_pulse[Index_AXIS1],velocity[Index_AXIS1], //ID,goal,velocity
+		gMapRAxisID[Index_AXIS2],(unsigned short int)Ang_pulse[Index_AXIS2],velocity[Index_AXIS2], 
+		gMapRAxisID[Index_AXIS3],(unsigned short int)Ang_pulse[Index_AXIS3],velocity[Index_AXIS3], 
+		gMapRAxisID[Index_AXIS4],(unsigned short int)Ang_pulse[Index_AXIS4],velocity[Index_AXIS4], 
+		gMapRAxisID[Index_AXIS4],(unsigned short int)Ang_pulse[Index_AXIS5],velocity[Index_AXIS5], 
+		gMapRAxisID[Index_AXIS6],(unsigned short int)Ang_pulse[Index_AXIS6],velocity[Index_AXIS6], 
+		gMapRAxisID[Index_AXIS7],(unsigned short int)Ang_pulse[Index_AXIS7],velocity[Index_AXIS7], 
 	};
 
 	
@@ -173,7 +217,7 @@ void TestReadPos()
 	//==Read pos_pus==//
 	static float pos_pus[MAX_AXIS_NUM]={0};
 	int rt=0;
-	rt=Read_pos(pos_pus,DEF_UNIT_DEG);
+	rt=Read_pos(DEF_RIGHT_HAND,pos_pus,DEF_UNIT_DEG);
 
 	for(int i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
 	{
@@ -215,24 +259,24 @@ int _tmain(int argc, _TCHAR* argv[])
 	int rt=DXL_Initial_x86();
 	if(rt==0)
 		return 0;
-	
-	MoveToPoint(500,-50,0,30,0,0,-90);
-	Sleep(3000);
+
+
+	ROM_Setting_Dual();
+
 
 	for(int i=0;i<4;i++)
 	{
-		TestRectangle();
+		TestRectangle_Dual();
 	}
 	//TestOutput();
 
-	//ROM_Setting();
+	//
 	//TestAction();
 	//clockTest();
 	
 	//TestSyncwrite();
 	
 	//TestReadPos();
-
 	getchar();
 
 	DXL_Terminate_x86();
