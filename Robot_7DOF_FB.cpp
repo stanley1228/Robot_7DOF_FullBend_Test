@@ -693,7 +693,7 @@ int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_bas
 
 //第七軸為roll軸
 
-int IK_7DOF_FB7roll(const float linkL[6],const float base[3],const float Pend[3],const float PoseAngle[3],const float Rednt_alpha,float* out_theta)
+int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const float Pend[3],const float PoseAngle[3],const float Rednt_alpha,float* out_theta)
 {
     //輸出參數initial
 	float theta[7]={0};
@@ -917,9 +917,15 @@ int IK_7DOF_FB7roll(const float linkL[6],const float base[3],const float Pend[3]
         theta[Index_AXIS7]=theta[Index_AXIS7];
     else
         theta[Index_AXIS7]=-theta[Index_AXIS7];  
-	
+
+
+	// ==左右手第1軸方向相反== //
+    if (RLHand == DEF_LEFT_HAND) //左手和右手第一軸方向相反
+        theta[Index_AXIS1]=-theta[Index_AXIS1];
+    
+	//==output degree==//
 	memcpy(out_theta,theta,sizeof(theta));
-	
+
 	return 0;
 }
 
@@ -977,7 +983,7 @@ int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_de
 	else if(RLHand==DEF_LEFT_HAND)
 		base[DEF_Y]=L0;
 
-	rt= IK_7DOF_FB7roll(linkL,base,Pend,Pose_rad,Rednt_alpha,theta);
+	rt= IK_7DOF_FB7roll(DEF_RIGHT_HAND,linkL,base,Pend,Pose_rad,Rednt_alpha,theta);
 	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
 		DBGMSG(("axis %d=%f\n",gMapAxisNO[i],theta[i]))
 	
@@ -1022,7 +1028,7 @@ int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R
 	bool bOver=false;
 
 	//inverse kinematics right hand
-	rt= IK_7DOF_FB7roll(linkL,base_R,Pend_R,Pose_rad_R,Rednt_alpha_rad_R,theta_R);
+	rt= IK_7DOF_FB7roll(DEF_RIGHT_HAND,linkL,base_R,Pend_R,Pose_rad_R,Rednt_alpha_rad_R,theta_R);
 	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
 		DBGMSG(("axis %d=%f\n",gMapAxisNO[i],theta_R[i]))
 
@@ -1036,7 +1042,7 @@ int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R
 	}
 
 	//inverse kinematics left hand
-	rt= IK_7DOF_FB7roll(linkL,base_L,Pend_L,Pose_rad_L,Rednt_alpha_rad_L,theta_L);
+	rt= IK_7DOF_FB7roll(DEF_LEFT_HAND,linkL,base_L,Pend_L,Pose_rad_L,Rednt_alpha_rad_L,theta_L);
 	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
 		DBGMSG(("axis %d=%f\n",gMapAxisNO[i],theta_L[i]))
 	
