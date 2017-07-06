@@ -17,13 +17,13 @@ int TestRectangle_Dual()
 {
 	float O_R[3]={500,-50 ,0};
 	float Q_R[3]={500,-200,0};
-	float R_R[3]={500,-200,-220};
-	float S_R[3]={500,-50 ,-220};
+	float R_R[3]={500,-200,-200};
+	float S_R[3]={500,-50 ,-200};
 
 	float O_L[3]={500,50 ,0};
 	float Q_L[3]={500,200,0};
-	float R_L[3]={500,200,-220};
-	float S_L[3]={500,50 ,-220};
+	float R_L[3]={500,200,-200};
+	float S_L[3]={500,50 ,-200};
  
 	float Pend_R[3]={0,0,0};
 	float pose_deg_R[3]={60,0,0};
@@ -75,7 +75,7 @@ int TestRectangle_Dual()
 			}
 		}
 	
-		Sleep(100);
+		Sleep(500);
 		MoveToPoint_Dual(Pend_R,pose_deg_R,Rednt_alpha_R,Pend_L,pose_deg_L,Rednt_alpha_L);
 		//DBGMSG(("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]))
 		printf("Pend_R[%d]=[%f,%f,%f],Pend_L[%d]=[%f,%f,%f]\n",t,Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z],Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
@@ -85,12 +85,27 @@ int TestRectangle_Dual()
 
 }
 
+int TestMoveToHome_Dual()
+{
+	float theta_R[7]={0,0,0,0*DEF_RATIO_DEG_TO_RAD,0,0,0};
+	float theta_L[7]={0,0,0,0*DEF_RATIO_DEG_TO_RAD,0,0,0};
+
+	//output to motor
+	unsigned short int velocity_R[MAX_AXIS_NUM]={10,10,10,10,10,10,10};
+	unsigned short int velocity_L[MAX_AXIS_NUM]={10,10,10,10,10,10,10};
+	
+	Output_to_Dynamixel_Dual(theta_R,velocity_R,theta_L,velocity_L); 
+
+	Sleep(3000);
+	
+	return 0;
+
+}
 
 
 
 
-
-int TestRectangle()
+int TestRectangle_RightHand()
 {
 	//把此路徑分成90份
 	float O[3]={500,-50,0};  
@@ -99,6 +114,7 @@ int TestRectangle()
 	float S[3]={500,-50,-150};
 	float point[3]={0,0,0};
 	float pose_deg[3]={30,0,0};
+
 	
 
 	 //畫正方形做IK FK測試
@@ -135,6 +151,55 @@ int TestRectangle()
 }
 
 
+int TestRectangle_LeftHand()
+{
+	//把此路徑分成90份
+	float O_L[3]={500,50 ,0};
+	float Q_L[3]={500,200,0};
+	float R_L[3]={500,200,-200};
+	float S_L[3]={500,50 ,-200};
+ 
+	float Pend_L[3]={0,0,0};
+	float pose_deg_L[3]={-60,45,0};
+	float Rednt_alpha_L=90;
+	
+	//move to initial point
+	MoveToPoint(DEF_LEFT_HAND,O_L,pose_deg_L,Rednt_alpha_L);
+	Sleep(3000);
+
+
+	 //畫正方形做IK FK測試
+	for(int t=1;t<=DEF_DESCRETE_POINT;t++)
+	{
+		if(t<=25)
+		{
+			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
+				Pend_L[f]=O_L[f]+(Q_L[f]-O_L[f])*t/25; 
+		}
+		else if(t<=50)
+		{
+			for(int f=0;f<3;f++)  
+				Pend_L[f]=Q_L[f]+(R_L[f]-Q_L[f])*(t-25)/25;
+		}
+		else if(t<=75)
+		{
+			for(int f=0;f<3;f++)  
+				Pend_L[f]=R_L[f]+(S_L[f]-R_L[f])*(t-50)/25;
+		}
+		else 
+		{
+			for(int f=0;f<3;f++)  
+				Pend_L[f]=S_L[f]+(O_L[f]-S_L[f])*(t-75)/15;
+		}
+	
+		Sleep(500);
+		MoveToPoint(DEF_LEFT_HAND,Pend_L,pose_deg_L,Rednt_alpha_L);
+		//DBGMSG(("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]))
+		printf("Pend_L[%d]=[%f,%f,%f]\n",t,Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
+	}
+
+	return 0;
+}
 
 int TestAction()
 {
@@ -253,21 +318,36 @@ int clockTest()
 
 }
 
+void TestGripper()
+{
+	GripperHold(DEF_RIGHT_HAND,true);
+
+	/*Sleep(3000);
+	GripperHold(DEF_LEFT_HAND,true);*/
+}
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	//int rt=DXL_Initial_x86();
-	//if(rt==0)
-	//	return 0;
+	/*int rt=DXL_Initial_x86();
+	if(rt==0)
+		return 0;*/
 
+	Initial_Modbus();
 
+	TestGripper();
+
+	//TestRectangle_Dual();
 	//ROM_Setting_Dual();
 
+	//TestRectangle_LeftHand();
 
+	//TestRectangle_LeftHand();
 	//for(int i=0;i<4;i++)
 	//{
-		TestRectangle_Dual();
+	//TestRectangle_Dual();
 	//}
+
+	//TestMoveToHome_Dual();
 	//TestOutput();
 
 	//
@@ -279,8 +359,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//TestReadPos();
 	getchar();
 
-	//DXL_Terminate_x86();
-	
+	DXL_Terminate_x86();
+	Terminate_Modbus();
 	return 0;
 }
 
