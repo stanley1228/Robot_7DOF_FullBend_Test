@@ -14,6 +14,8 @@
 
 
 #pragma comment(lib,"dynamixel.lib") 
+#pragma comment(lib,"modbus.lib")
+
 
 using namespace std;
 
@@ -983,7 +985,7 @@ int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_de
 	else if(RLHand==DEF_LEFT_HAND)
 		base[DEF_Y]=L0;
 
-	rt= IK_7DOF_FB7roll(DEF_RIGHT_HAND,linkL,base,Pend,Pose_rad,Rednt_alpha,theta);
+	rt= IK_7DOF_FB7roll(RLHand,linkL,base,Pend,Pose_rad,Rednt_alpha,theta);
 	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
 		DBGMSG(("axis %d=%f\n",gMapAxisNO[i],theta[i]))
 	
@@ -1001,7 +1003,7 @@ int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_de
 	}
 
 	//output to motor
-	unsigned short int velocity[MAX_AXIS_NUM]={20,20,20,20,20,20};
+	unsigned short int velocity[MAX_AXIS_NUM]={10,10,10,10,10,10,10};
 	
 	rt=Output_to_Dynamixel(RLHand,theta,velocity); 
 
@@ -1057,8 +1059,8 @@ int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R
 
 
 	//output to motor
-	unsigned short int velocity_R[MAX_AXIS_NUM]={20,20,20,20,20,20};
-	unsigned short int velocity_L[MAX_AXIS_NUM]={20,20,20,20,20,20};
+	unsigned short int velocity_R[MAX_AXIS_NUM]={20,20,20,20,20,20,20};
+	unsigned short int velocity_L[MAX_AXIS_NUM]={20,20,20,20,20,20,20};
 	
 	rt=Output_to_Dynamixel_Dual(theta_R,velocity_R,theta_L,velocity_L); 
 
@@ -1143,5 +1145,83 @@ int DXL_Terminate_x86()
 {
 	dxl_terminate();
 	
+	return 0;
+}
+
+//========================
+//==Modbus control gripper
+//========================
+modbus_t *ctx;
+
+int Initial_Modbus()
+{
+	
+	ctx = modbus_new_rtu("COM8",460800,'N',8,1);
+	
+	//modbus_set_debug(ctx, 1);//會print執行狀況
+ 
+	//設定debug偵測錯誤
+	int rt=0;
+	rt=modbus_connect(ctx);//連接modbus
+ 
+	modbus_set_slave(ctx,1);//輸入設備ID＝1
+ 
+	
+	//判斷是否有正常連線
+	if (rt == -1)
+	{
+		printf("modbus link error");
+		modbus_free(ctx);
+		return -1;
+	}
+ 
+	uint16_t dest[10]={0};
+	/*modbus_read_registers(ctx, 4001,10, dest);
+ 
+	modbus_write_register(ctx,4001,1000);
+
+	modbus_read_registers(ctx, 4001,10, dest);*/
+	//modbus_write_register(ctx,0x0259,0x0003); 
+	//寫入資料PLC的位置 modbus_write_register(usb port,PLC位置,數值)
+ 
+	///*  結束流程 */
+	//modbus_close(ctx);
+ //
+	//modbus_free(ctx);
+	return 0;
+}
+
+void Terminate_Modbus()
+{
+	/*  結束流程 */
+	modbus_close(ctx);
+	modbus_free(ctx);
+}
+
+#define DEF_HOLD 1
+#define DEF_RELEASE 0
+
+int GripperHold(int RLHand,bool Hold)
+{
+	//address4001  //RIGHT_HAND
+	//address4002  //Left_HAND
+
+	if(RLHand==DEF_RIGHT_HAND)
+	{
+		if(Hold)
+			modbus_write_register(ctx,4000,DEF_HOLD);
+		else
+			modbus_write_register(ctx,4000,DEF_RELEASE);
+	}
+	else if(RLHand==DEF_LEFT_HAND)
+	{
+		if(Hold)
+			modbus_write_register(ctx,4001,DEF_HOLD);
+		else
+			modbus_write_register(ctx,4001,DEF_RELEASE);
+	}
+
+	uint16_t dest[10]={0};
+	modbus_read_registers(ctx, 4000,10, dest);
 	return 0;
 }
