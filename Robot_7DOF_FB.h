@@ -3,6 +3,9 @@
 
 
 #include "Matrix.h"
+#include "modbus.h"
+
+
 
 
 #define DEBUG 1
@@ -184,12 +187,12 @@ enum{
 #define AXISR7_R2M_OFFSET_DEG 90
 //left
 #define AXISL1_R2M_OFFSET_DEG 180
-#define AXISL2_R2M_OFFSET_DEG 270
+#define AXISL2_R2M_OFFSET_DEG 90
 #define AXISL3_R2M_OFFSET_DEG 180
 #define AXISL4_R2M_OFFSET_DEG 90
-#define AXISL5_R2M_OFFSET_DEG 180
-#define AXISL6_R2M_OFFSET_DEG 90
-#define AXISL7_R2M_OFFSET_DEG 90
+#define AXISL5_R2M_OFFSET_DEG 90
+#define AXISL6_R2M_OFFSET_DEG 180
+#define AXISL7_R2M_OFFSET_DEG 180
 
 //==robot angle limit==//
 //right
@@ -201,12 +204,12 @@ enum{
 #define AXISR3_ROBOT_LIM_DEG_H 170
 #define AXISR4_ROBOT_LIM_DEG_L 0	
 #define AXISR4_ROBOT_LIM_DEG_H 170	
-#define AXISR5_ROBOT_LIM_DEG_L (-30)
-#define AXISR5_ROBOT_LIM_DEG_H 90
-#define AXISR6_ROBOT_LIM_DEG_L (-37)
-#define AXISR6_ROBOT_LIM_DEG_H 90
-#define AXISR7_ROBOT_LIM_DEG_L (-180)
-#define AXISR7_ROBOT_LIM_DEG_H 180
+#define AXISR5_ROBOT_LIM_DEG_L (-100)
+#define AXISR5_ROBOT_LIM_DEG_H 40
+#define AXISR6_ROBOT_LIM_DEG_L (-21)
+#define AXISR6_ROBOT_LIM_DEG_H 110
+#define AXISR7_ROBOT_LIM_DEG_L (-170)
+#define AXISR7_ROBOT_LIM_DEG_H 170
 //left
 #define AXISL1_ROBOT_LIM_DEG_L (-170)
 #define AXISL1_ROBOT_LIM_DEG_H 80
@@ -216,12 +219,12 @@ enum{
 #define AXISL3_ROBOT_LIM_DEG_H 105
 #define AXISL4_ROBOT_LIM_DEG_L 0	
 #define AXISL4_ROBOT_LIM_DEG_H 170	
-#define AXISL5_ROBOT_LIM_DEG_L (-90)
-#define AXISL5_ROBOT_LIM_DEG_H 30
-#define AXISL6_ROBOT_LIM_DEG_L (-37)
-#define AXISL6_ROBOT_LIM_DEG_H 90
-#define AXISL7_ROBOT_LIM_DEG_L (-180)
-#define AXISL7_ROBOT_LIM_DEG_H 180
+#define AXISL5_ROBOT_LIM_DEG_L (-40)
+#define AXISL5_ROBOT_LIM_DEG_H 100
+#define AXISL6_ROBOT_LIM_DEG_L (-21)
+#define AXISL6_ROBOT_LIM_DEG_H 110
+#define AXISL7_ROBOT_LIM_DEG_L (-170)
+#define AXISL7_ROBOT_LIM_DEG_H 170
 
 //==robot TORQUE limit==//  0~1023
 //right
@@ -237,9 +240,9 @@ enum{
 #define AXISL2_MAX_TORQUE 430
 #define AXISL3_MAX_TORQUE 300	//40%
 #define AXISL4_MAX_TORQUE 415	//40%
-#define AXISL5_MAX_TORQUE 55
-#define AXISL6_MAX_TORQUE 200
-#define AXISL7_MAX_TORQUE 55
+#define AXISL5_MAX_TORQUE 415
+#define AXISL6_MAX_TORQUE 415
+#define AXISL7_MAX_TORQUE 415
 
 //==define right hand or left hand==//
 #define DEF_RIGHT_HAND	1
@@ -373,16 +376,14 @@ static const float grobot_lim_pus_L_High[MAX_AXIS_NUM]=
 //==ROBOT link length
 //====================
 #define L0 225    	//head to shoulder
-#define L1 250    	//upper arm
-#define L2 50   	//forearm
-#define L3 50     	//length of end effector
-#define L4 250     	//length of end effector
-#define L5 150     	//length of end effector
+#define L1 250    	//L-type linker long side
+#define L2 25   	//L-type linker short side
+#define L3 25     	//L-type linker short side
+#define L4 230     	//L-type linker long side
+#define L5 180     	//length from wrist to end effector
 #define X_BASE 0  	//基準點只能都先設0
 #define Y_BASE 0
 #define Z_BASE 0
-
-
 
 #define DEF_VERY_SMALL (1.e-5)//很小的量判斷為0使用
 
@@ -414,4 +415,8 @@ int DXL_Initial_x86();
 int DXL_Terminate_x86();
 
 
+//Modbus control gripper
+int Initial_Modbus();
+void Terminate_Modbus();
+int GripperHold(int RLHand,bool Hold);
 #endif    /* ROBOT_7DOF_FB__H */
