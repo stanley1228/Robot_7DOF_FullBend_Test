@@ -325,17 +325,26 @@ void TestGripper()
 	/*Sleep(3000);
 	GripperHold(DEF_LEFT_HAND,true);*/
 }
+void TestGripperLattePanda()
+{
+	Gripper_LattePanda_Hold(DEF_RIGHT_HAND,true);
 
+	/*Sleep(3000);
+	GripperHold(DEF_LEFT_HAND,true);*/
+}
 int _tmain(int argc, _TCHAR* argv[])
 {
 	/*int rt=DXL_Initial_x86();
 	if(rt==0)
 		return 0;*/
 
-	Initial_Modbus();
+	//Initial_Modbus();
 
-	TestGripper();
+	//TestGripper();
+	Gripper_LattePanda_Initial();
+	TestGripperLattePanda();
 
+	Gripper_LattePanda_Close();
 	//TestRectangle_Dual();
 	//ROM_Setting_Dual();
 
@@ -360,7 +369,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	getchar();
 
 	DXL_Terminate_x86();
-	Terminate_Modbus();
+	//Terminate_Modbus();
 	return 0;
 }
 
