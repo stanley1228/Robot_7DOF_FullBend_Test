@@ -17,6 +17,8 @@
 #pragma comment(lib,"modbus.lib")
 
 
+
+
 using namespace std;
 
 #if (DEBUG)
@@ -1151,7 +1153,7 @@ int DXL_Terminate_x86()
 //========================
 //==Modbus control gripper
 //========================
-modbus_t *ctx;
+modbus_t *ctx;  //CLI不能有全域變數所以會跳LNK4248
 
 int Initial_Modbus()
 {
@@ -1223,5 +1225,101 @@ int GripperHold(int RLHand,bool Hold)
 
 	uint16_t dest[10]={0};
 	modbus_read_registers(ctx, 4000,10, dest);
+	return 0;
+}
+
+
+
+//=========================================
+//==LattePanda Arduino Leonardo for Gripper
+//==using C# "LattePanda Firmata
+//=========================================
+using namespace  LattePandaFirmata;
+#using "LattePandaFirmata.dll"
+#include <windows.h> //sleep使用
+#pragma warning (disable: 4538)
+
+#define DEF_LATTE_D2_GRIPPER_R1	6
+#define DEF_LATTE_D3_GRIPPER_R2	8
+#define DEF_LATTE_D4_GRIPPER_L1	10
+#define DEF_LATTE_D5_GRIPPER_L2	12
+#define DEF_LATTE_D13_LED		13
+ref class GlobalObjects
+{
+public:
+	static Arduino ^arduino=nullptr;
+
+	static int Initial()
+	{
+		arduino = gcnew Arduino();
+		arduino->pinMode(DEF_LATTE_D2_GRIPPER_R1, arduino->OUTPUT);//Set the digital pin 6 as output      
+		arduino->pinMode(DEF_LATTE_D3_GRIPPER_R2, arduino->OUTPUT);//Set the digital pin 8 as output
+		arduino->pinMode(DEF_LATTE_D4_GRIPPER_L1, arduino->OUTPUT);//Set the digital pin 10 as output      
+		arduino->pinMode(DEF_LATTE_D5_GRIPPER_L2, arduino->OUTPUT);//Set the digital pin 12 as output
+
+		//arduino->pinMode(DEF_LATTE_D13_LED, arduino->OUTPUT);//Set the digital pin 13 as output just test
+
+		return 0;
+	}
+	static int Close()
+	{
+		arduino->Close();
+		return 0;
+	}
+};
+
+
+int Gripper_LattePanda_Initial()
+{
+	 GlobalObjects::Initial();
+	 return 0;
+}
+
+void Gripper_LattePanda_Close()
+{
+	 GlobalObjects::Close();
+}
+
+int Gripper_LattePanda_Hold(int RLHand,bool Hold)
+{
+	//=========
+	//=Test LED
+	//=========
+    //for(int i=0;i<5;i++)
+    //{
+    //    // ==== set the led on or off  
+    //    GlobalObjects::arduino->digitalWrite(DEF_LATTE_D13_LED, GlobalObjects::arduino->HIGH);//set the LED　on  
+    //    Sleep(1000);//delay a seconds  
+    //    GlobalObjects::arduino->digitalWrite(DEF_LATTE_D13_LED, GlobalObjects::arduino->LOW);//set the LED　off  
+    //    Sleep(1000);//delay a seconds  
+    //}
+
+
+	if(RLHand==DEF_RIGHT_HAND)
+	{
+		if(Hold)
+		{
+			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D2_GRIPPER_R1, GlobalObjects::arduino->HIGH);
+			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D3_GRIPPER_R2, GlobalObjects::arduino->LOW);
+		}
+		else
+		{
+			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D2_GRIPPER_R1, GlobalObjects::arduino->LOW);
+			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D3_GRIPPER_R2, GlobalObjects::arduino->HIGH);
+		}
+	}
+	else if(RLHand==DEF_LEFT_HAND)
+	{
+		if(Hold)
+		{
+			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D4_GRIPPER_L1, GlobalObjects::arduino->HIGH);
+			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D5_GRIPPER_L2, GlobalObjects::arduino->LOW);
+		}
+		else
+		{
+			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D4_GRIPPER_L1, GlobalObjects::arduino->LOW);
+			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D5_GRIPPER_L2, GlobalObjects::arduino->HIGH);
+		}
+	}
 	return 0;
 }
