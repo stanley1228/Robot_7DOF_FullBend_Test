@@ -419,4 +419,8 @@ int DXL_Terminate_x86();
 int Initial_Modbus();
 void Terminate_Modbus();
 int GripperHold(int RLHand,bool Hold);
+
+int Gripper_LattePanda_Initial();
+void Gripper_LattePanda_Close();
+int Gripper_LattePanda_Hold(int RLHand,bool Hold);
 #endif    /* ROBOT_7DOF_FB__H */
