@@ -1239,10 +1239,14 @@ using namespace  LattePandaFirmata;
 #include <windows.h> //sleep¨Ï¥Î
 #pragma warning (disable: 4538)
 
-#define DEF_LATTE_D2_GRIPPER_R1	2
-#define DEF_LATTE_D3_GRIPPER_R2	3
-#define DEF_LATTE_D4_GRIPPER_L1	4
-#define DEF_LATTE_D5_GRIPPER_L2	5
+#define DEF_LATTE_D1_GRIPPER_R1		1
+#define DEF_LATTE_D2_GRIPPER_R2		2
+#define DEF_LATTE_D3_GRIPPER_RPWM	3
+
+#define DEF_LATTE_D4_GRIPPER_L1		4
+#define DEF_LATTE_D5_GRIPPER_L2		5
+#define DEF_LATTE_D6_GRIPPER_LPWM	6
+
 #define DEF_LATTE_D13_LED		13
 ref class GlobalObjects
 {
@@ -1252,13 +1256,19 @@ public:
 	static int Initial()
 	{
 		arduino = gcnew Arduino();
-		arduino->pinMode(DEF_LATTE_D2_GRIPPER_R1, arduino->OUTPUT);//Set the digital pin 6 as output      
-		arduino->pinMode(DEF_LATTE_D3_GRIPPER_R2, arduino->OUTPUT);//Set the digital pin 8 as output
-		arduino->pinMode(DEF_LATTE_D4_GRIPPER_L1, arduino->OUTPUT);//Set the digital pin 10 as output      
-		arduino->pinMode(DEF_LATTE_D5_GRIPPER_L2, arduino->OUTPUT);//Set the digital pin 12 as output
+		arduino->pinMode(DEF_LATTE_D1_GRIPPER_R1, arduino->OUTPUT);//Set the digital pin 1 as output      
+		arduino->pinMode(DEF_LATTE_D2_GRIPPER_R2, arduino->OUTPUT);//Set the digital pin 2 as output
+		arduino->pinMode(DEF_LATTE_D3_GRIPPER_RPWM, arduino->PWM);//Set the digital pin 3 as pwm
+
+		arduino->pinMode(DEF_LATTE_D4_GRIPPER_L1, arduino->OUTPUT);//Set the digital pin 4 as output      
+		arduino->pinMode(DEF_LATTE_D5_GRIPPER_L2, arduino->OUTPUT);//Set the digital pin 5 as output
+		arduino->pinMode(DEF_LATTE_D6_GRIPPER_LPWM, arduino->PWM);//Set the digital pin 6 as pwm
 
 		arduino->pinMode(DEF_LATTE_D13_LED, arduino->OUTPUT);//Set the digital pin 13 as output just test
 
+
+		arduino->analogWrite(DEF_LATTE_D3_GRIPPER_RPWM, 185);//0~255  255:4.5V  185:3.3V
+		arduino->analogWrite(DEF_LATTE_D6_GRIPPER_LPWM, 185);//0~255
 		return 0;
 	}
 	static int Close()
@@ -1285,34 +1295,34 @@ int Gripper_LattePanda_Hold(int RLHand,bool Hold)
 	//=========
 	//=Test LED
 	//=========
-    for(int i=0;i<5;i++)
-    {
-        // ==== set the led on or off  
-        GlobalObjects::arduino->digitalWrite(DEF_LATTE_D13_LED, GlobalObjects::arduino->HIGH);//set the LED¡@on  
-        Sleep(500);//delay a seconds  
-        GlobalObjects::arduino->digitalWrite(DEF_LATTE_D13_LED, GlobalObjects::arduino->LOW);//set the LED¡@off  
-        Sleep(500);//delay a seconds  
-    }
+    //for(int i=0;i<5;i++)
+    //{
+    //    // ==== set the led on or off  
+    //    GlobalObjects::arduino->digitalWrite(DEF_LATTE_D13_LED, GlobalObjects::arduino->HIGH);//set the LED¡@on  
+    //    Sleep(500);//delay a seconds  
+    //    GlobalObjects::arduino->digitalWrite(DEF_LATTE_D13_LED, GlobalObjects::arduino->LOW);//set the LED¡@off  
+    //    Sleep(500);//delay a seconds  
+    //}
 
-	int delay=800;
+	int delay=500;
 
 	if(RLHand==DEF_RIGHT_HAND)
 	{
 		if(Hold)
 		{
-			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D2_GRIPPER_R1, GlobalObjects::arduino->HIGH);
-			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D3_GRIPPER_R2, GlobalObjects::arduino->LOW);
+			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D1_GRIPPER_R1, GlobalObjects::arduino->HIGH);
+			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D2_GRIPPER_R2, GlobalObjects::arduino->LOW);
 		}
 		else
 		{
-			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D2_GRIPPER_R1, GlobalObjects::arduino->LOW);
-			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D3_GRIPPER_R2, GlobalObjects::arduino->HIGH);
+			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D1_GRIPPER_R1, GlobalObjects::arduino->LOW);
+			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D2_GRIPPER_R2, GlobalObjects::arduino->HIGH);
 		}
 
 		Sleep(delay);
 
-		GlobalObjects::arduino->digitalWrite(DEF_LATTE_D2_GRIPPER_R1, GlobalObjects::arduino->LOW);
-		GlobalObjects::arduino->digitalWrite(DEF_LATTE_D3_GRIPPER_R2, GlobalObjects::arduino->LOW);
+		GlobalObjects::arduino->digitalWrite(DEF_LATTE_D1_GRIPPER_R1, GlobalObjects::arduino->LOW);
+		GlobalObjects::arduino->digitalWrite(DEF_LATTE_D2_GRIPPER_R2, GlobalObjects::arduino->LOW);
 
 	}
 	else if(RLHand==DEF_LEFT_HAND)
