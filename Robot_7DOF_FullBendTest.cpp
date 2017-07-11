@@ -327,7 +327,20 @@ void TestGripper()
 }
 void TestGripperLattePanda()
 {
-	Gripper_LattePanda_Hold(DEF_LEFT_HAND,true);
+	char c='a';
+	while(1)
+	{
+		Gripper_LattePanda_Hold(DEF_LEFT_HAND,true);
+		getchar();
+
+		Gripper_LattePanda_Hold(DEF_LEFT_HAND,false);
+		c=getchar();
+
+		if(c=='c')
+		{
+			break;
+		}
+	}
 }
 
 
@@ -473,9 +486,9 @@ int Rec_Rectangle_Dual()
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	int rt=DXL_Initial_x86();
-	if(rt==0)
-		return 0;
+	//int rt=DXL_Initial_x86();
+	//if(rt==0)
+	//	return 0;
 
 	//Initial_Modbus();
 
@@ -483,14 +496,14 @@ int _tmain(int argc, _TCHAR* argv[])
 	//================//
 	//==Gripper Test==//
 	//================//
-	//Gripper_LattePanda_Initial();
-	//TestGripperLattePanda();
-	//Gripper_LattePanda_Close();
+	Gripper_LattePanda_Initial();
+	TestGripperLattePanda();
+	Gripper_LattePanda_Close();
 
 	//==========================//
 	//==GRecord_LineMove_LeftHand
 	//==========================//
-	Rec_Rectangle_Dual();
+	//Rec_Rectangle_Dual();
 	//TestRectangle_Dual();
 	//ROM_Setting_Dual();
 
@@ -513,9 +526,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	
 	//TestReadPos();
 	
-	DXL_Terminate_x86();
+	//DXL_Terminate_x86();
 
-	getchar();
+	//getchar();
 	
 	return 0;
 }
