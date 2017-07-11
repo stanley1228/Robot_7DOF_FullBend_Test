@@ -327,24 +327,170 @@ void TestGripper()
 }
 void TestGripperLattePanda()
 {
-	Gripper_LattePanda_Hold(DEF_RIGHT_HAND,true);
-
-	/*Sleep(3000);
-	GripperHold(DEF_LEFT_HAND,true);*/
+	Gripper_LattePanda_Hold(DEF_LEFT_HAND,true);
 }
+
+
+#include<fstream>
+void Record_LineMove_LeftHand()
+{
+	//==Move to 以左肩座標系的P1_L[500,-L0,0]
+	float P1_L[3]={500,-100 ,0};
+	float pose_deg_L[3]={-60,0,0};
+	float Rednt_alpha_L=90;
+	MoveToPoint(DEF_LEFT_HAND,P1_L,pose_deg_L,Rednt_alpha_L);
+	Sleep(3000);
+
+	//==open file
+	fstream file;
+	file.open("D://linemove_rec.csv",ios::out|ios::trunc);
+	
+	//==record para
+	float pos_deg[MAX_AXIS_NUM]={0};
+	int rt=0;
+	int n=0;
+	char buffer[100];
+	
+	//==Move to 以左肩座標系的P2_L[500,100,0]
+	//畫正方形做IK FK測試
+	float P2_L[3]={500,100,0};
+	float Pend_L[3]={0,0,0};
+	for(int t=1;t<=100;t++)
+	{
+		rt=Read_pos(DEF_LEFT_HAND,pos_deg,DEF_UNIT_DEG);
+		if(rt==0)
+		{
+			n=sprintf_s(buffer,sizeof(buffer),"%d,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,\n",t,pos_deg[Index_AXIS1],pos_deg[Index_AXIS2],pos_deg[Index_AXIS3],pos_deg[Index_AXIS4],pos_deg[Index_AXIS5],pos_deg[Index_AXIS6],pos_deg[Index_AXIS7]);
+			file.write(buffer,n);
+			//fprintf(file,buffer);
+		}
+
+		for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
+			Pend_L[f]=P1_L[f]+(P2_L[f]-P1_L[f])*t/100; 
+
+		MoveToPoint(DEF_LEFT_HAND,Pend_L,pose_deg_L,Rednt_alpha_L);
+
+		Sleep(100);
+	}
+	
+	
+	file.close();
+
+}
+
+int Rec_Rectangle_Dual()
+{
+	float O_R[3]={500,-50 ,0};
+	float Q_R[3]={500,-200,0};
+	float R_R[3]={500,-200,-200};
+	float S_R[3]={500,-50 ,-200};
+
+	float O_L[3]={500,50 ,0};
+	float Q_L[3]={500,200,0};
+	float R_L[3]={500,200,-200};
+	float S_L[3]={500,50 ,-200};
+ 
+	float Pend_R[3]={0,0,0};
+	float pose_deg_R[3]={60,0,0};
+	float Rednt_alpha_R=-90;
+
+	float Pend_L[3]={0,0,0};
+	float pose_deg_L[3]={-60,0,0};
+	float Rednt_alpha_L=90;
+
+
+	//move to initial point
+	MoveToPoint(DEF_RIGHT_HAND,O_R,pose_deg_R,Rednt_alpha_R);
+	MoveToPoint(DEF_LEFT_HAND,O_L,pose_deg_L,Rednt_alpha_L);
+	Sleep(3000);
+
+	//==open file
+	fstream file;
+	file.open("D://linemove_rec.csv",ios::out|ios::trunc);
+	
+	//==record para
+	float pos_deg[MAX_AXIS_NUM]={0};
+	int rt=0;
+	int n=0;
+	char buffer[100];
+	
+
+	//畫正方形做IK 測試
+	for(int t=0;t<=100;t++)
+	{
+		//Read left hand
+		rt=Read_pos(DEF_LEFT_HAND,pos_deg,DEF_UNIT_DEG);
+		if(rt==0)
+		{
+			n=sprintf_s(buffer,sizeof(buffer),"%d,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,\n",t,pos_deg[Index_AXIS1],pos_deg[Index_AXIS2],pos_deg[Index_AXIS3],pos_deg[Index_AXIS4],pos_deg[Index_AXIS5],pos_deg[Index_AXIS6],pos_deg[Index_AXIS7]);
+			file.write(buffer,n);
+			//fprintf(file,buffer);
+		}
+
+		if(t<=25)
+		{
+			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
+			{
+				Pend_R[f]=O_R[f]+(Q_R[f]-O_R[f])*t/25; 
+				Pend_L[f]=O_L[f]+(Q_L[f]-O_L[f])*t/25; 
+			}
+		}
+		else if(t<=50)
+		{
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=Q_R[f]+(R_R[f]-Q_R[f])*(t-25)/25;
+				Pend_L[f]=Q_L[f]+(R_L[f]-Q_L[f])*(t-25)/25;
+			}
+		}
+		else if(t<=75)
+		{
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=R_R[f]+(S_R[f]-R_R[f])*(t-50)/25;
+				Pend_L[f]=R_L[f]+(S_L[f]-R_L[f])*(t-50)/25;
+			}
+		}
+		else 
+		{
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=S_R[f]+(O_R[f]-S_R[f])*(t-75)/25;
+				Pend_L[f]=S_L[f]+(O_L[f]-S_L[f])*(t-75)/25;
+			}
+		}
+	
+		
+		MoveToPoint_Dual(Pend_R,pose_deg_R,Rednt_alpha_R,Pend_L,pose_deg_L,Rednt_alpha_L);
+		//DBGMSG(("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]))
+		//printf("Pend_R[%d]=[%f,%f,%f],Pend_L[%d]=[%f,%f,%f]\n",t,Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z],Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
+		Sleep(100);
+	}
+
+	return 0;
+
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
-	/*int rt=DXL_Initial_x86();
+	int rt=DXL_Initial_x86();
 	if(rt==0)
-		return 0;*/
+		return 0;
 
 	//Initial_Modbus();
 
-	//TestGripper();
-	Gripper_LattePanda_Initial();
-	TestGripperLattePanda();
+	
+	//================//
+	//==Gripper Test==//
+	//================//
+	//Gripper_LattePanda_Initial();
+	//TestGripperLattePanda();
+	//Gripper_LattePanda_Close();
 
-	Gripper_LattePanda_Close();
+	//==========================//
+	//==GRecord_LineMove_LeftHand
+	//==========================//
+	Rec_Rectangle_Dual();
 	//TestRectangle_Dual();
 	//ROM_Setting_Dual();
 
@@ -366,10 +512,11 @@ int _tmain(int argc, _TCHAR* argv[])
 	//TestSyncwrite();
 	
 	//TestReadPos();
-	getchar();
-
+	
 	DXL_Terminate_x86();
-	//Terminate_Modbus();
+
+	getchar();
+	
 	return 0;
 }
 
