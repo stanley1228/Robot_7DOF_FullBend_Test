@@ -1239,10 +1239,10 @@ using namespace  LattePandaFirmata;
 #include <windows.h> //sleep¨Ï¥Î
 #pragma warning (disable: 4538)
 
-#define DEF_LATTE_D2_GRIPPER_R1	6
-#define DEF_LATTE_D3_GRIPPER_R2	8
-#define DEF_LATTE_D4_GRIPPER_L1	10
-#define DEF_LATTE_D5_GRIPPER_L2	12
+#define DEF_LATTE_D2_GRIPPER_R1	2
+#define DEF_LATTE_D3_GRIPPER_R2	3
+#define DEF_LATTE_D4_GRIPPER_L1	4
+#define DEF_LATTE_D5_GRIPPER_L2	5
 #define DEF_LATTE_D13_LED		13
 ref class GlobalObjects
 {
@@ -1257,7 +1257,7 @@ public:
 		arduino->pinMode(DEF_LATTE_D4_GRIPPER_L1, arduino->OUTPUT);//Set the digital pin 10 as output      
 		arduino->pinMode(DEF_LATTE_D5_GRIPPER_L2, arduino->OUTPUT);//Set the digital pin 12 as output
 
-		//arduino->pinMode(DEF_LATTE_D13_LED, arduino->OUTPUT);//Set the digital pin 13 as output just test
+		arduino->pinMode(DEF_LATTE_D13_LED, arduino->OUTPUT);//Set the digital pin 13 as output just test
 
 		return 0;
 	}
@@ -1285,15 +1285,16 @@ int Gripper_LattePanda_Hold(int RLHand,bool Hold)
 	//=========
 	//=Test LED
 	//=========
-    //for(int i=0;i<5;i++)
-    //{
-    //    // ==== set the led on or off  
-    //    GlobalObjects::arduino->digitalWrite(DEF_LATTE_D13_LED, GlobalObjects::arduino->HIGH);//set the LED¡@on  
-    //    Sleep(1000);//delay a seconds  
-    //    GlobalObjects::arduino->digitalWrite(DEF_LATTE_D13_LED, GlobalObjects::arduino->LOW);//set the LED¡@off  
-    //    Sleep(1000);//delay a seconds  
-    //}
+    for(int i=0;i<5;i++)
+    {
+        // ==== set the led on or off  
+        GlobalObjects::arduino->digitalWrite(DEF_LATTE_D13_LED, GlobalObjects::arduino->HIGH);//set the LED¡@on  
+        Sleep(500);//delay a seconds  
+        GlobalObjects::arduino->digitalWrite(DEF_LATTE_D13_LED, GlobalObjects::arduino->LOW);//set the LED¡@off  
+        Sleep(500);//delay a seconds  
+    }
 
+	int delay=800;
 
 	if(RLHand==DEF_RIGHT_HAND)
 	{
@@ -1307,6 +1308,12 @@ int Gripper_LattePanda_Hold(int RLHand,bool Hold)
 			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D2_GRIPPER_R1, GlobalObjects::arduino->LOW);
 			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D3_GRIPPER_R2, GlobalObjects::arduino->HIGH);
 		}
+
+		Sleep(delay);
+
+		GlobalObjects::arduino->digitalWrite(DEF_LATTE_D2_GRIPPER_R1, GlobalObjects::arduino->LOW);
+		GlobalObjects::arduino->digitalWrite(DEF_LATTE_D3_GRIPPER_R2, GlobalObjects::arduino->LOW);
+
 	}
 	else if(RLHand==DEF_LEFT_HAND)
 	{
@@ -1320,6 +1327,14 @@ int Gripper_LattePanda_Hold(int RLHand,bool Hold)
 			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D4_GRIPPER_L1, GlobalObjects::arduino->LOW);
 			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D5_GRIPPER_L2, GlobalObjects::arduino->HIGH);
 		}
+
+		Sleep(delay);
+
+		GlobalObjects::arduino->digitalWrite(DEF_LATTE_D4_GRIPPER_L1, GlobalObjects::arduino->LOW);
+		GlobalObjects::arduino->digitalWrite(DEF_LATTE_D5_GRIPPER_L2, GlobalObjects::arduino->LOW);
 	}
+
+
+
 	return 0;
 }
