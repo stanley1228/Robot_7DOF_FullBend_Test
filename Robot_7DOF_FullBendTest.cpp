@@ -318,13 +318,7 @@ int clockTest()
 
 }
 
-void TestGripper()
-{
-	GripperHold(DEF_RIGHT_HAND,true);
 
-	/*Sleep(3000);
-	GripperHold(DEF_LEFT_HAND,true);*/
-}
 void TestGripperLattePanda()
 {
 	char c='a';
@@ -484,21 +478,60 @@ int Rec_Rectangle_Dual()
 
 }
 
+void TestMoveAndCatch()
+{
+	//Move to intial
+	printf("Move to home...\n");
+	TestMoveToHome_Dual();
+
+	//把此路徑分成90份
+	float O_L[3]={500,50 ,0};
+	float pose_deg_L[3]={-60,0,0};
+	float Rednt_alpha_L=90;
+	
+	//Move to O_L
+	printf("Move to 500,50,0...\n");
+	MoveToPoint(DEF_LEFT_HAND,O_L,pose_deg_L,Rednt_alpha_L);
+	Sleep(10000);
+
+	//Hold gripper
+	printf("Hold...\n");
+	Gripper_LattePanda_Hold(DEF_LEFT_HAND,true);
+
+	//Move to intial
+	printf("Move to home...\n");
+	TestMoveToHome_Dual();
+	Sleep(10000);
+
+	//Release gripper
+	printf("Release...\n");
+	Gripper_LattePanda_Hold(DEF_LEFT_HAND,false);
+
+	
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
-	//int rt=DXL_Initial_x86();
-	//if(rt==0)
-	//	return 0;
+	//===initial===///
+	int rt=DXL_Initial_x86();
+	if(rt==0)
+	{
+		printf("DXL_Initial_x86 failed\n");
+		getchar();
+		return 0;
+	}
 
-	//Initial_Modbus();
+	Gripper_LattePanda_Initial();
 
+	//Test Move And Catch
+	TestMoveAndCatch();
+	//TestRectangle_LeftHand();
 	
 	//================//
 	//==Gripper Test==//
 	//================//
-	Gripper_LattePanda_Initial();
-	TestGripperLattePanda();
-	Gripper_LattePanda_Close();
+	//TestGripperLattePanda();
+	//Gripper_LattePanda_Close();
 
 	//==========================//
 	//==GRecord_LineMove_LeftHand
@@ -526,9 +559,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	
 	//TestReadPos();
 	
-	//DXL_Terminate_x86();
-
-	//getchar();
+	DXL_Terminate_x86();
+	Gripper_LattePanda_Close();
+	getchar();
 	
 	return 0;
 }
