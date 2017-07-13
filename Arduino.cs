@@ -146,7 +146,9 @@ namespace LattePandaFirmata
         /// <returns>An array of strings containing all available serial ports.</returns>
         public static string[] list()
         {
-            return SerialPort.GetPortNames();
+            string[] sarr_portnames = SerialPort.GetPortNames();  //stanley 改善會出現為COM1 COM7 COM6的問題
+            Array.Sort(sarr_portnames);                            //stanley
+            return sarr_portnames;
         }
         /// <summary>
         /// Sets the mode of the specified pin (INPUT or OUTPUT).
