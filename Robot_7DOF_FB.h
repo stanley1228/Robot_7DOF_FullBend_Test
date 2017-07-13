@@ -416,9 +416,11 @@ int DXL_Terminate_x86();
 
 
 //Modbus control gripper
+#ifdef MODBUS_GRIPPER
 int Initial_Modbus();
 void Terminate_Modbus();
 int GripperHold(int RLHand,bool Hold);
+#endif
 
 int Gripper_LattePanda_Initial();
 void Gripper_LattePanda_Close();

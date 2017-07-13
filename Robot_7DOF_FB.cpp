@@ -14,7 +14,7 @@
 
 
 #pragma comment(lib,"dynamixel.lib") 
-#pragma comment(lib,"modbus.lib")
+
 
 
 
@@ -988,9 +988,13 @@ int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_de
 		base[DEF_Y]=L0;
 
 	rt= IK_7DOF_FB7roll(RLHand,linkL,base,Pend,Pose_rad,Rednt_alpha,theta);
+
 	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
-		DBGMSG(("axis %d=%f\n",gMapAxisNO[i],theta[i]))
-	
+	{
+		DBGMSG(("%d:%3.0f, ",gMapAxisNO[i],theta[i]*DEF_RATIO_RAD_TO_DEG))
+	}
+	DBGMSG(("\n"))
+
 	//==prevent angle over constrain
 	int over_index=0;
 	bool bOver=AngleOverConstrain(RLHand,theta,&over_index);
@@ -1135,9 +1139,10 @@ int setPosition_x86(int ServoID, int Position, int Speed)//stanley
 int DXL_Initial_x86()
 {
 	int rt=0;
-	const int default_portnum=5;
+	const int default_portnum=6;
 	const int default_baudnum=1;
 
+	printf("DXL_port=%d\n",default_portnum);
 	rt=dxl_initialize( default_portnum,default_baudnum);
 	
 	return rt;
@@ -1153,6 +1158,9 @@ int DXL_Terminate_x86()
 //========================
 //==Modbus control gripper
 //========================
+#ifdef MODBUS_GRIPPER
+#pragma comment(lib,"modbus.lib")
+
 modbus_t *ctx;  //CLI不能有全域變數所以會跳LNK4248
 
 int Initial_Modbus()
@@ -1228,7 +1236,7 @@ int GripperHold(int RLHand,bool Hold)
 	return 0;
 }
 
-
+#endif
 
 //=========================================
 //==LattePanda Arduino Leonardo for Gripper
