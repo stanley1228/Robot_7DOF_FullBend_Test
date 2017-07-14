@@ -510,6 +510,139 @@ void TestMoveAndCatch()
 	
 }
 
+void TestStillMoving()
+{
+	int rt=0;
+	bool stillmoving=true;
+	bool btemp=true;
+	for(int i=0;i<3;i++)
+	{
+		
+		setPosition_x86(gMapRAxisID[Index_AXIS1],0, 50);
+		printf("move to 0..\n");
+
+		stillmoving=true;
+		while(stillmoving)
+		{
+			rt=IsMoving(DEF_RIGHT_HAND,&btemp);
+			if(rt==0)
+			{
+				stillmoving=btemp;
+			}
+			Sleep(300);
+			printf("stillmoving to 0..\n");
+		}
+
+		setPosition_x86(gMapRAxisID[Index_AXIS1],2048, 50);
+		printf("move to 2048..\n");
+
+		stillmoving=true;
+		while(stillmoving)
+		{
+			rt=IsMoving(DEF_RIGHT_HAND,&btemp);
+			if(rt==0)
+			{
+				stillmoving=btemp;
+			}
+			Sleep(300);
+			printf("stillmoving to 2048..\n");
+		}
+	}
+
+}
+
+
+void QPDelay_ms(int t_ms)
+{
+	LARGE_INTEGER nFreq;
+	LARGE_INTEGER nBeginTime;
+	LARGE_INTEGER nEndTime;
+
+	QueryPerformanceFrequency(&nFreq);
+	
+
+	QueryPerformanceCounter(&nBeginTime); 
+	do
+	{
+		Sleep(0);
+		QueryPerformanceCounter(&nEndTime);
+		//printf("%f\n",(double)(nEndTime.QuadPart-nBeginTime.QuadPart)*1000/(double)nFreq.QuadPart);
+	}
+	while((double)(nEndTime.QuadPart-nBeginTime.QuadPart)*1000/(double)nFreq.QuadPart < t_ms);
+}		
+	
+
+void TestOneAxisInterpolation()
+{
+	float Pstart=0;
+	float Ptarget=4000;
+	float Pend=0;
+	
+	//==to start point
+	setPosition_x86(gMapRAxisID[Index_AXIS1],0,0);
+	QPDelay_ms(2000);
+
+	//==total time record
+	LARGE_INTEGER nFreq;
+	LARGE_INTEGER nBeginTime;
+	LARGE_INTEGER nEndTime;
+	
+	QueryPerformanceFrequency(&nFreq);
+	QueryPerformanceCounter(&nBeginTime); 
+
+	//==open file
+	//fstream file;
+	//file.open("D://one_axis_interpolation_10ms_in1s.csv",ios::out|ios::trunc);
+	
+	//==record para
+	int pos_pus=0;
+	int rt=0;
+	int n=0;
+	char buffer[100];
+	
+
+	for(int t=0;t<=10;t++)
+	{
+		Pend=Pstart+(Ptarget-Pstart)*t/10;
+
+		setPosition_x86(gMapRAxisID[Index_AXIS1],(int)Pend,0);
+
+		printf("Pend=%f\n",Pend);
+
+		//==delay
+		QPDelay_ms(10);
+
+		//==Read right hand and record
+		//pos_pus=dxl_read_word(gMapRAxisID[Index_AXIS1], PRESENT_POS);
+		//if(dxl_get_result()==COMM_RXSUCCESS)
+		//{
+		//	n=sprintf_s(buffer,sizeof(buffer),"%d,%d\n",t,pos_pus);
+		//	file.write(buffer,n);
+		//}
+	}
+
+	//==delay
+	//QPDelay_ms(4000);
+
+	//==Read right hand and record
+	//pos_pus=dxl_read_word(gMapRAxisID[Index_AXIS1], PRESENT_POS);
+	//if(dxl_get_result()==COMM_RXSUCCESS)
+	//{
+	//	n=sprintf_s(buffer,sizeof(buffer),"%d,%d\n",501,pos_pus);
+	//	file.write(buffer,n);
+	//}
+
+	////==close file
+	//file.close();
+
+
+	QueryPerformanceCounter(&nEndTime);
+	double time=(double)(nEndTime.QuadPart-nBeginTime.QuadPart)/(double)nFreq.QuadPart;
+	printf("total time=%f s\n",time);
+
+}
+
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	//===initial===///
@@ -521,10 +654,12 @@ int _tmain(int argc, _TCHAR* argv[])
 		return 0;
 	}
 
-	Gripper_LattePanda_Initial();
+	
+	TestOneAxisInterpolation();
+	//Gripper_LattePanda_Initial();
 
 	//Test Move And Catch
-	TestMoveAndCatch();
+	//TestMoveAndCatch();
 	//TestRectangle_LeftHand();
 	
 	//================//
@@ -560,7 +695,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//TestReadPos();
 	
 	DXL_Terminate_x86();
-	Gripper_LattePanda_Close();
+	//Gripper_LattePanda_Close();
 	getchar();
 	
 	return 0;
