@@ -696,7 +696,7 @@ int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_bas
 
 
 //第七軸為roll軸
-
+//目前測試矩形路徑平均大概需要10.8ms
 int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const float Pend[3],const float PoseAngle[3],const float Rednt_alpha,float* out_theta)
 {
     //輸出參數initial
@@ -1073,6 +1073,38 @@ int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R
 	return 0;
 }
 
+int IsMoving(int RLHand,bool *stillmoving)	
+{
+	int rt=0;
+	int moving=0;
+
+	for(int i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	{
+		//read pulse
+		if(RLHand==DEF_RIGHT_HAND)
+			moving = dxl_read_byte(gMapRAxisID[i], STILL_MOVING);
+		else if(RLHand==DEF_LEFT_HAND)
+			moving = dxl_read_byte(gMapLAxisID[i], STILL_MOVING);
+
+		//If communication ok 
+		if(dxl_get_result()==COMM_RXSUCCESS)
+		{
+			if(moving==1)
+				break;	
+		}	
+		else
+		{
+			rt=1;//communication error
+			break; 
+		}
+	}
+
+
+	(*stillmoving)=(moving==1)?true:false;
+	return rt;
+		
+}
+
 int syncWrite_x86(unsigned short int start_addr, unsigned short int data_length, unsigned short int *param, unsigned short int param_length) // WORD(16bit) syncwrite() for DXL  stanley
 {
     //syncWrite_u16base(GOAL_POSITION,2,SyncPage1,21);//byte syncWrite(byte start_addr, byte num_of_data, int *param, int array_length);
@@ -1139,7 +1171,7 @@ int setPosition_x86(int ServoID, int Position, int Speed)//stanley
 int DXL_Initial_x86()
 {
 	int rt=0;
-	const int default_portnum=6;
+	const int default_portnum=5;
 	const int default_baudnum=1;
 
 	printf("DXL_port=%d\n",default_portnum);

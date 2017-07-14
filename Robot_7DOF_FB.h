@@ -406,11 +406,11 @@ int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const fl
 bool AngleOverConstrain(int RLHand,const float theta[MAX_AXIS_NUM],int *OverIndex);
 int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_deg);
 int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R,float Pend_L[3],float Pose_deg_L[3],float Rednt_alpha_deg_L);  //應該要有一個速度參數
-
+int IsMoving(int RLHand,bool *stillmoving);
 
 //dynamixel use
 int syncWrite_x86(unsigned short int start_addr, unsigned short int data_length, unsigned short int *param, unsigned short int param_length); // WORD(16bit) syncwrite() for DXL
-int setPosition_x86(int ServoID, int Position, int Speed);//stanley
+int setPosition_x86(int ServoID, int Position, int Speed);
 int DXL_Initial_x86();
 int DXL_Terminate_x86();
 
