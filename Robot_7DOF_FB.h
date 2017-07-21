@@ -20,8 +20,6 @@
 //==MAX AXIS
 //==========
 #define MAX_AXIS_NUM  7
-#define MAX_AXIS_NUM_DUAL  (MAX_AXIS_NUM*2)
-
 #define DEF_RIGHT_HAND 1
 #define DEF_LEFT_HAND 2
 
@@ -131,7 +129,7 @@ static const unsigned char gMapAxisNO[MAX_AXIS_NUM]=
 };
 
 
-static const unsigned char gMapRAxisID[MAX_AXIS_NUM_DUAL]=
+static const unsigned char gMapRAxisID[MAX_AXIS_NUM]=
 {
 	ID_RAXIS1,
 	ID_RAXIS2,
@@ -142,7 +140,7 @@ static const unsigned char gMapRAxisID[MAX_AXIS_NUM_DUAL]=
 	ID_RAXIS7
 };
 
-static const unsigned char gMapLAxisID[MAX_AXIS_NUM_DUAL]=
+static const unsigned char gMapLAxisID[MAX_AXIS_NUM]=
 {
 	ID_LAXIS1,
 	ID_LAXIS2,
@@ -164,7 +162,8 @@ static const unsigned char gMapLAxisID[MAX_AXIS_NUM_DUAL]=
 #define DEF_RATIO_DEG_TO_RAD (DEF_PI/180)		//pi/180	0.01745329251994329576923690768489 (0.0175F)
 #define DEF_RATIO_RAD_TO_DEG (180/DEF_PI)	
 #define DEF_RATIO_RAD_TO_PUS (651.8986F)	//4096/2pi	651.89864690440329530934789477382
-
+#define DEF_RATIO_VEL_PUS_TO_DEG (0.684F)  //moving speed in register(0~1024) to deg/s
+#define DEF_RATIO_VEL_DEG_TO_PUS (1.462)
 
 //for read pos unit select
 enum{
@@ -205,7 +204,7 @@ enum{
 #define AXISR4_ROBOT_LIM_DEG_L 0	
 #define AXISR4_ROBOT_LIM_DEG_H 170	
 #define AXISR5_ROBOT_LIM_DEG_L (-100)
-#define AXISR5_ROBOT_LIM_DEG_H 40
+#define AXISR5_ROBOT_LIM_DEG_H 80
 #define AXISR6_ROBOT_LIM_DEG_L (-21)
 #define AXISR6_ROBOT_LIM_DEG_H 110
 #define AXISR7_ROBOT_LIM_DEG_L (-170)
@@ -219,7 +218,7 @@ enum{
 #define AXISL3_ROBOT_LIM_DEG_H 105
 #define AXISL4_ROBOT_LIM_DEG_L 0	
 #define AXISL4_ROBOT_LIM_DEG_H 170	
-#define AXISL5_ROBOT_LIM_DEG_L (-40)
+#define AXISL5_ROBOT_LIM_DEG_L (-80)
 #define AXISL5_ROBOT_LIM_DEG_H 100
 #define AXISL6_ROBOT_LIM_DEG_L (-21)
 #define AXISL6_ROBOT_LIM_DEG_H 110
@@ -228,21 +227,72 @@ enum{
 
 //==robot TORQUE limit==//  0~1023
 //right
-#define AXISR1_MAX_TORQUE 614	//60%
-#define AXISR2_MAX_TORQUE 430
-#define AXISR3_MAX_TORQUE 300	//40%
-#define AXISR4_MAX_TORQUE 415	//40%
-#define AXISR5_MAX_TORQUE 55
-#define AXISR6_MAX_TORQUE 200
-#define AXISR7_MAX_TORQUE 55
+#define AXISR1_MAX_TORQUE 928	//90%
+#define AXISR2_MAX_TORQUE 430   //42%	
+#define AXISR3_MAX_TORQUE 923	//90%
+#define AXISR4_MAX_TORQUE 926	//90%
+#define AXISR5_MAX_TORQUE 514	//50%
+#define AXISR6_MAX_TORQUE 519	//50%
+#define AXISR7_MAX_TORQUE 517	//50%
 //left
-#define AXISL1_MAX_TORQUE 614	//60%
-#define AXISL2_MAX_TORQUE 430
-#define AXISL3_MAX_TORQUE 300	//40%
-#define AXISL4_MAX_TORQUE 415	//40%
-#define AXISL5_MAX_TORQUE 415
-#define AXISL6_MAX_TORQUE 415
-#define AXISL7_MAX_TORQUE 415
+#define AXISL1_MAX_TORQUE 928	//90%
+#define AXISL2_MAX_TORQUE 430   //42%	
+#define AXISL3_MAX_TORQUE 923	//90%
+#define AXISL4_MAX_TORQUE 926	//90%
+#define AXISL5_MAX_TORQUE 514	//50%
+#define AXISL6_MAX_TORQUE 519	//50%
+#define AXISL7_MAX_TORQUE 517	//50%
+
+//==PID P gain==//
+#define AXISR1_P_GAIN	32		
+#define AXISR2_P_GAIN	32
+#define AXISR3_P_GAIN	32
+#define AXISR4_P_GAIN	32
+#define AXISR5_P_GAIN	32
+#define AXISR6_P_GAIN	32
+#define AXISR7_P_GAIN	32
+
+#define AXISL1_P_GAIN	32		
+#define AXISL2_P_GAIN	32
+#define AXISL3_P_GAIN	32
+#define AXISL4_P_GAIN	32
+#define AXISL5_P_GAIN	32
+#define AXISL6_P_GAIN	32
+#define AXISL7_P_GAIN	32
+
+//==PID I gain==//
+#define AXISR1_I_GAIN	15		
+#define AXISR2_I_GAIN	15
+#define AXISR3_I_GAIN	15
+#define AXISR4_I_GAIN	15
+#define AXISR5_I_GAIN	15
+#define AXISR6_I_GAIN	15
+#define AXISR7_I_GAIN	15
+
+#define AXISL1_I_GAIN	15		
+#define AXISL2_I_GAIN	15
+#define AXISL3_I_GAIN	15
+#define AXISL4_I_GAIN	15
+#define AXISL5_I_GAIN	15
+#define AXISL6_I_GAIN	15
+#define AXISL7_I_GAIN	15
+
+//==PID D gain==//
+#define AXISR1_D_GAIN	10		
+#define AXISR2_D_GAIN	10
+#define AXISR3_D_GAIN	10
+#define AXISR4_D_GAIN	10
+#define AXISR5_D_GAIN	10
+#define AXISR6_D_GAIN	10
+#define AXISR7_D_GAIN	10
+
+#define AXISL1_D_GAIN	10		
+#define AXISL2_D_GAIN	10
+#define AXISL3_D_GAIN	10
+#define AXISL4_D_GAIN	10
+#define AXISL5_D_GAIN	10
+#define AXISL6_D_GAIN	10
+#define AXISL7_D_GAIN	10
 
 //==define right hand or left hand==//
 #define DEF_RIGHT_HAND	1
@@ -393,6 +443,7 @@ static const float grobot_lim_pus_L_High[MAX_AXIS_NUM]=
 unsigned char getMapAxisNO(unsigned char index); //index 0~ (MAX_AXIS_NUM-1)
 unsigned char getMapAxisID(unsigned char index);
 int ROM_Setting_Dual();
+void PID_Setting_Dual();
 int Read_pos(int RLHand,float *pos,unsigned char unit);
 int Output_to_Dynamixel(int RLHand,const float *Ang_rad,const unsigned short int *velocity) ;
 int Output_to_Dynamixel_Dual(const float *Ang_rad_R,const unsigned short int *velocity_R,const float *Ang_rad_L,const unsigned short int *velocity_L);
@@ -404,9 +455,10 @@ Matrix Rogridues(float theta,const Matrix& V_A);
 int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_base,const float y_base,const float z_base,const float x_end,const float y_end,const float z_end,const float alpha,const float beta,const float gamma,const float Rednt_alpha,float* theta);
 int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const float Pend[3],const float PoseAngle[3],const float Rednt_alpha,float* out_theta);
 bool AngleOverConstrain(int RLHand,const float theta[MAX_AXIS_NUM],int *OverIndex);
-int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_deg);
-int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R,float Pend_L[3],float Pose_deg_L[3],float Rednt_alpha_deg_L);  //莱赣璶Τ硉把计
+int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_deg,float vel_deg);
+int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R,float vel_deg_R,float Pend_L[3],float Pose_deg_L[3],float Rednt_alpha_deg_L,float vel_deg_L);  //莱赣璶Τ硉把计
 int IsMoving(int RLHand,bool *stillmoving);
+void QPDelay_ms(int t_ms);
 
 //dynamixel use
 int syncWrite_x86(unsigned short int start_addr, unsigned short int data_length, unsigned short int *param, unsigned short int param_length); // WORD(16bit) syncwrite() for DXL
