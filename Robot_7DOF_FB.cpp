@@ -11,7 +11,7 @@
 
 
 #include "dynamixel.h"
-
+#include <windows.h> //QPDelay_msㄏノ
 
 #pragma comment(lib,"dynamixel.lib") 
 
@@ -261,6 +261,153 @@ int ROM_Setting_Dual()
 	}
 
 	return 0;
+}
+
+void PID_Setting_Dual()
+{
+	const short int P_GAIN_R[MAX_AXIS_NUM]=
+	{
+		AXISR1_P_GAIN,
+		AXISR2_P_GAIN,
+		AXISR3_P_GAIN,
+		AXISR4_P_GAIN,
+		AXISR5_P_GAIN,
+		AXISR6_P_GAIN,
+		AXISR7_P_GAIN
+	};
+
+	const short int P_GAIN_L[MAX_AXIS_NUM]=
+	{
+		AXISL1_P_GAIN,
+		AXISL2_P_GAIN,
+		AXISL3_P_GAIN,
+		AXISL4_P_GAIN,
+		AXISL5_P_GAIN,
+		AXISL6_P_GAIN,
+		AXISL7_P_GAIN
+	};
+	const short int I_GAIN_R[MAX_AXIS_NUM]=
+	{
+		AXISR1_I_GAIN,
+		AXISR2_I_GAIN,
+		AXISR3_I_GAIN,
+		AXISR4_I_GAIN,
+		AXISR5_I_GAIN,
+		AXISR6_I_GAIN,
+		AXISR7_I_GAIN
+	};
+	const short int I_GAIN_L[MAX_AXIS_NUM]=
+	{
+		AXISL1_I_GAIN,
+		AXISL2_I_GAIN,
+		AXISL3_I_GAIN,
+		AXISL4_I_GAIN,
+		AXISL5_I_GAIN,
+		AXISL6_I_GAIN,
+		AXISL7_I_GAIN
+	};
+	const short int D_GAIN_R[MAX_AXIS_NUM]=
+	{
+		AXISR1_D_GAIN,
+		AXISR2_D_GAIN,
+		AXISR3_D_GAIN,
+		AXISR4_D_GAIN,
+		AXISR5_D_GAIN,
+		AXISR6_D_GAIN,
+		AXISR7_D_GAIN
+	};
+	const short int D_GAIN_L[MAX_AXIS_NUM]=
+	{
+		AXISL1_D_GAIN,
+		AXISL2_D_GAIN,
+		AXISL3_D_GAIN,
+		AXISL4_D_GAIN,
+		AXISL5_D_GAIN,
+		AXISL6_D_GAIN,
+		AXISL7_D_GAIN
+	};
+
+	//==write PID para  ==//
+	int i=0;
+	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	{
+		//==Set P==//
+		dxl_write_byte(gMapRAxisID[i],P_GAIN,P_GAIN_R[i]);//right
+		dxl_write_byte(gMapLAxisID[i],P_GAIN,P_GAIN_L[i]);//left
+	
+		//==Set I==//
+		dxl_write_byte(gMapRAxisID[i],I_GAIN,I_GAIN_R[i]);//right
+		dxl_write_byte(gMapLAxisID[i],I_GAIN,I_GAIN_L[i]);//left  
+
+		//==Set D==//
+		dxl_write_byte(gMapRAxisID[i],D_GAIN,D_GAIN_R[i]);//right
+		dxl_write_byte(gMapLAxisID[i],D_GAIN,D_GAIN_L[i]);//left
+	}
+
+
+	//==read and check right hand==//
+	int	txrx_result=0;
+	short int p_gain=0;
+	short int i_gain=0,d_gain=0;
+	short int multi_turn_offset=0;
+	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	{
+		printf("===AXIS_R%d===\n",gMapAxisNO[i]);
+
+		//==P GAIN==//
+		p_gain = dxl_read_byte(gMapRAxisID[i], P_GAIN);
+		txrx_result = dxl_get_result();
+		if(txrx_result!=COMM_RXSUCCESS)
+			printf("Failed read P_GAIN error=%d\n",txrx_result);
+		else
+			printf("P_GAIN=%d\n",p_gain);
+	
+		//==I GAIN==//
+		i_gain=dxl_read_byte(gMapRAxisID[i],I_GAIN);
+		txrx_result = dxl_get_result();
+		if(txrx_result!=COMM_RXSUCCESS)
+			printf("Failed read I_GAIN error=%d\n",txrx_result);
+		else	
+			printf("I_GAIN=%d\n",i_gain);
+
+		//==D GAIN==//
+		d_gain=dxl_read_byte(gMapRAxisID[i],D_GAIN);
+		txrx_result = dxl_get_result();
+		if(txrx_result!=COMM_RXSUCCESS)
+			printf("Failed Read D_GAIN error=%d\n",txrx_result);
+		else	
+			printf("D_GAIN=%d\n",d_gain);
+	}	
+	//==read and check left hand==//
+	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	{
+		printf("===AXIS_L%d===\n",gMapAxisNO[i]);
+
+		//==P GAIN==//
+		p_gain = dxl_read_byte(gMapLAxisID[i], P_GAIN);
+		txrx_result = dxl_get_result();
+		if(txrx_result!=COMM_RXSUCCESS)
+			printf("Failed read P_GAIN error=%d\n",txrx_result);
+		else
+			printf("P_GAIN=%d\n",p_gain);
+	
+		//==I GAIN==//
+		i_gain=dxl_read_byte(gMapLAxisID[i],I_GAIN);
+		txrx_result = dxl_get_result();
+		if(txrx_result!=COMM_RXSUCCESS)
+			printf("Failed read I_GAIN error=%d\n",txrx_result);
+		else	
+			printf("I_GAIN=%d\n",i_gain);
+
+		//==D GAIN==//
+		d_gain=dxl_read_byte(gMapLAxisID[i],D_GAIN);
+		txrx_result = dxl_get_result();
+		if(txrx_result!=COMM_RXSUCCESS)
+			printf("Failed Read D_GAIN error=%d\n",txrx_result);
+		else	
+			printf("D_GAIN=%d\n",d_gain);
+	}	
+
 }
 
 //rt=Read_pos(pos_pus,DEF_UNIT_PUS)
@@ -971,7 +1118,7 @@ bool AngleOverConstrain(int RLHand, const float theta[MAX_AXIS_NUM],int *OverInd
 }
 
 
-int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_deg)  //莱赣璶Τ硉把计
+int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_deg,float vel_deg) 
 {
 	const float linkL[6]={L0,L1,L2,L3,L4,L5};
 	float base[3]={0.0};
@@ -979,8 +1126,9 @@ int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_de
 	float Pose_rad[3]={Pose_deg[DEF_ALPHA]*DEF_RATIO_DEG_TO_RAD,Pose_deg[DEF_BETA]*DEF_RATIO_DEG_TO_RAD,Pose_deg[DEF_GAMMA]*DEF_RATIO_DEG_TO_RAD};
 	float Rednt_alpha=redant_alpha_deg*DEF_RATIO_DEG_TO_RAD;
 	float theta[7]={0};
+	int vel_pus=(int)(vel_deg*DEF_RATIO_VEL_DEG_TO_PUS);
 	int rt=0;
-
+	
 	//inverse kinematics
 	if(RLHand==DEF_RIGHT_HAND)
 		base[DEF_Y]=-L0;
@@ -989,12 +1137,22 @@ int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_de
 
 	rt= IK_7DOF_FB7roll(RLHand,linkL,base,Pend,Pose_rad,Rednt_alpha,theta);
 
-	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+	if(RLHand==DEF_RIGHT_HAND)
 	{
-		DBGMSG(("%d:%3.0f, ",gMapAxisNO[i],theta[i]*DEF_RATIO_RAD_TO_DEG))
+		for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+		{
+			DBGMSG(("R%d:%3.0f, ",gMapAxisNO[i],theta[i]*DEF_RATIO_RAD_TO_DEG))
+		}
+		DBGMSG(("\n"))
 	}
-	DBGMSG(("\n"))
-
+	else if(RLHand==DEF_LEFT_HAND)
+	{
+		for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+		{
+			DBGMSG(("L%d:%3.0f, ",gMapAxisNO[i],theta[i]*DEF_RATIO_RAD_TO_DEG))
+		}
+		DBGMSG(("\n"))
+	}
 	//==prevent angle over constrain
 	int over_index=0;
 	bool bOver=AngleOverConstrain(RLHand,theta,&over_index);
@@ -1009,7 +1167,7 @@ int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_de
 	}
 
 	//output to motor
-	unsigned short int velocity[MAX_AXIS_NUM]={10,10,10,10,10,10,10};
+	unsigned short int velocity[MAX_AXIS_NUM]={vel_pus,vel_pus,vel_pus,vel_pus,vel_pus,vel_pus,vel_pus};
 	
 	rt=Output_to_Dynamixel(RLHand,theta,velocity); 
 
@@ -1017,7 +1175,7 @@ int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_de
 }
 
 
-int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R,float Pend_L[3],float Pose_deg_L[3],float Rednt_alpha_deg_L)  //莱赣璶Τ硉把计
+int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R,float vel_deg_R,float Pend_L[3],float Pose_deg_L[3],float Rednt_alpha_deg_L,float vel_deg_L)
 {
 	const float linkL[6]={L0,L1,L2,L3,L4,L5};
 	float base_R[3]={0,-L0,0};
@@ -1031,14 +1189,19 @@ int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R
 
 	float theta_R[7]={0};
 	float theta_L[7]={0};
+	int vel_pus_R=(int)(vel_deg_R*DEF_RATIO_VEL_DEG_TO_PUS);
+	int vel_pus_L=(int)(vel_deg_R*DEF_RATIO_VEL_DEG_TO_PUS);
 	int rt=0;
 	int over_index=0;
 	bool bOver=false;
 
 	//inverse kinematics right hand
 	rt= IK_7DOF_FB7roll(DEF_RIGHT_HAND,linkL,base_R,Pend_R,Pose_rad_R,Rednt_alpha_rad_R,theta_R);
-	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
-		DBGMSG(("axis %d=%f\n",gMapAxisNO[i],theta_R[i]))
+	//for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+	//{
+	//	DBGMSG(("R%d:%3.0f, ",gMapAxisNO[i],theta_R[i]*DEF_RATIO_RAD_TO_DEG))
+	//}
+	//DBGMSG(("\n"))
 
 	//==prevent angle over constrain right hand 
 	over_index=0;
@@ -1052,7 +1215,10 @@ int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R
 	//inverse kinematics left hand
 	rt= IK_7DOF_FB7roll(DEF_LEFT_HAND,linkL,base_L,Pend_L,Pose_rad_L,Rednt_alpha_rad_L,theta_L);
 	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
-		DBGMSG(("axis %d=%f\n",gMapAxisNO[i],theta_L[i]))
+	{
+		DBGMSG(("L%d:%3.0f, ",gMapAxisNO[i],theta_L[i]*DEF_RATIO_RAD_TO_DEG))
+	}
+	DBGMSG(("\n"))
 	
 	//==prevent angle over constrain left hand 
 	over_index=0;
@@ -1065,8 +1231,8 @@ int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R
 
 
 	//output to motor
-	unsigned short int velocity_R[MAX_AXIS_NUM]={20,20,20,20,20,20,20};
-	unsigned short int velocity_L[MAX_AXIS_NUM]={20,20,20,20,20,20,20};
+	unsigned short int velocity_R[MAX_AXIS_NUM]={vel_pus_R,vel_pus_R,vel_pus_R,vel_pus_R,vel_pus_R,vel_pus_R,vel_pus_R};
+	unsigned short int velocity_L[MAX_AXIS_NUM]={vel_pus_L,vel_pus_L,vel_pus_L,vel_pus_L,vel_pus_L,vel_pus_L,vel_pus_L};
 	
 	rt=Output_to_Dynamixel_Dual(theta_R,velocity_R,theta_L,velocity_L); 
 
@@ -1104,6 +1270,25 @@ int IsMoving(int RLHand,bool *stillmoving)
 	return rt;
 		
 }
+
+void QPDelay_ms(int t_ms)
+{
+	LARGE_INTEGER nFreq;
+	LARGE_INTEGER nBeginTime;
+	LARGE_INTEGER nEndTime;
+
+	QueryPerformanceFrequency(&nFreq);
+	
+
+	QueryPerformanceCounter(&nBeginTime); 
+	do
+	{
+		Sleep(0);
+		QueryPerformanceCounter(&nEndTime);
+		//printf("%f\n",(double)(nEndTime.QuadPart-nBeginTime.QuadPart)*1000/(double)nFreq.QuadPart);
+	}
+	while((double)(nEndTime.QuadPart-nBeginTime.QuadPart)*1000/(double)nFreq.QuadPart < t_ms);
+}	
 
 int syncWrite_x86(unsigned short int start_addr, unsigned short int data_length, unsigned short int *param, unsigned short int param_length) // WORD(16bit) syncwrite() for DXL  stanley
 {
@@ -1388,3 +1573,4 @@ int Gripper_LattePanda_Hold(int RLHand,bool Hold)
 
 	return 0;
 }
+
