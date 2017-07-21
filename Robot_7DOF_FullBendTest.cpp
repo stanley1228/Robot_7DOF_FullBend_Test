@@ -12,7 +12,7 @@
 using namespace std;
 
 
-#define DEF_DESCRETE_POINT 90
+#define DEF_DESCRETE_POINT 1000
 int TestRectangle_Dual()
 {
 	float O_R[3]={500,-50 ,0};
@@ -28,15 +28,16 @@ int TestRectangle_Dual()
 	float Pend_R[3]={0,0,0};
 	float pose_deg_R[3]={60,0,0};
 	float Rednt_alpha_R=-90;
+	float vel_deg_R=13;
 
 	float Pend_L[3]={0,0,0};
 	float pose_deg_L[3]={-60,0,0};
 	float Rednt_alpha_L=90;
-
+	float vel_deg_L=13;
 
 	//move to initial point
-	MoveToPoint(DEF_RIGHT_HAND,O_R,pose_deg_R,Rednt_alpha_R);
-	MoveToPoint(DEF_LEFT_HAND,O_L,pose_deg_L,Rednt_alpha_L);
+	MoveToPoint(DEF_RIGHT_HAND,O_R,pose_deg_R,Rednt_alpha_R,vel_deg_R);
+	MoveToPoint(DEF_LEFT_HAND,O_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);
 	Sleep(3000);
 
 	//畫正方形做IK 測試
@@ -76,7 +77,7 @@ int TestRectangle_Dual()
 		}
 	
 		Sleep(500);
-		MoveToPoint_Dual(Pend_R,pose_deg_R,Rednt_alpha_R,Pend_L,pose_deg_L,Rednt_alpha_L);
+		MoveToPoint_Dual(Pend_R,pose_deg_R,Rednt_alpha_R,vel_deg_R,Pend_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);
 		//DBGMSG(("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]))
 		printf("Pend_R[%d]=[%f,%f,%f],Pend_L[%d]=[%f,%f,%f]\n",t,Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z],Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
 	}
@@ -114,7 +115,7 @@ int TestRectangle_RightHand()
 	float S[3]={500,-50,-150};
 	float point[3]={0,0,0};
 	float pose_deg[3]={30,0,0};
-
+	float vel_deg=13;
 	
 
 	 //畫正方形做IK FK測試
@@ -142,7 +143,7 @@ int TestRectangle_RightHand()
 		}
 	
 		Sleep(100);
-		MoveToPoint(DEF_RIGHT_HAND,point,pose_deg,-90);
+		MoveToPoint(DEF_RIGHT_HAND,point,pose_deg,-90,vel_deg);
 		//DBGMSG(("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]))
 		printf("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]);
 	}
@@ -162,9 +163,9 @@ int TestRectangle_LeftHand()
 	float Pend_L[3]={0,0,0};
 	float pose_deg_L[3]={-60,45,0};
 	float Rednt_alpha_L=90;
-	
+	float vel_deg_L=13;
 	//move to initial point
-	MoveToPoint(DEF_LEFT_HAND,O_L,pose_deg_L,Rednt_alpha_L);
+	MoveToPoint(DEF_LEFT_HAND,O_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);
 	Sleep(3000);
 
 
@@ -193,7 +194,7 @@ int TestRectangle_LeftHand()
 		}
 	
 		Sleep(500);
-		MoveToPoint(DEF_LEFT_HAND,Pend_L,pose_deg_L,Rednt_alpha_L);
+		MoveToPoint(DEF_LEFT_HAND,Pend_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);
 		//DBGMSG(("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]))
 		printf("Pend_L[%d]=[%f,%f,%f]\n",t,Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
 	}
@@ -345,7 +346,8 @@ void Record_LineMove_LeftHand()
 	float P1_L[3]={500,-100 ,0};
 	float pose_deg_L[3]={-60,0,0};
 	float Rednt_alpha_L=90;
-	MoveToPoint(DEF_LEFT_HAND,P1_L,pose_deg_L,Rednt_alpha_L);
+	float vel_deg_L=13;
+	MoveToPoint(DEF_LEFT_HAND,P1_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);
 	Sleep(3000);
 
 	//==open file
@@ -375,7 +377,7 @@ void Record_LineMove_LeftHand()
 		for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
 			Pend_L[f]=P1_L[f]+(P2_L[f]-P1_L[f])*t/100; 
 
-		MoveToPoint(DEF_LEFT_HAND,Pend_L,pose_deg_L,Rednt_alpha_L);
+		MoveToPoint(DEF_LEFT_HAND,Pend_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);
 
 		Sleep(100);
 	}
@@ -385,93 +387,149 @@ void Record_LineMove_LeftHand()
 
 }
 
+
 int Rec_Rectangle_Dual()
 {
-	float O_R[3]={500,-50 ,0};
+	//float O_R[3]={400,-50 ,-100};
+	//float Q_R[3]={400,-200,-100};
+	//float R_R[3]={400,-200,-300};
+	//float S_R[3]={400,-50 ,-300};
+
+	//float O_L[3]={400,50 ,-100};
+	//float Q_L[3]={400,200,-100};
+	//float R_L[3]={400,200,-300};
+	//float S_L[3]={400,50 ,-300};
+
+	
+	float O_R[3]={500,-50,0};
 	float Q_R[3]={500,-200,0};
 	float R_R[3]={500,-200,-200};
-	float S_R[3]={500,-50 ,-200};
+	float S_R[3]={500,-50,-200};
 
-	float O_L[3]={500,50 ,0};
+	float O_L[3]={500,50,0};
 	float Q_L[3]={500,200,0};
 	float R_L[3]={500,200,-200};
-	float S_L[3]={500,50 ,-200};
+	float S_L[3]={500,50,-200};
  
 	float Pend_R[3]={0,0,0};
 	float pose_deg_R[3]={60,0,0};
 	float Rednt_alpha_R=-90;
+	float vel_deg_R=13;
 
 	float Pend_L[3]={0,0,0};
 	float pose_deg_L[3]={-60,0,0};
-	float Rednt_alpha_L=90;
 
+	float Rednt_alpha_L=90;
+	float vel_deg_L=13;
+
+	int rt=0;
+	bool stillmoving=true;
+	bool btemp=true;
+	int cnt_err=0;
 
 	//move to initial point
-	MoveToPoint(DEF_RIGHT_HAND,O_R,pose_deg_R,Rednt_alpha_R);
-	MoveToPoint(DEF_LEFT_HAND,O_L,pose_deg_L,Rednt_alpha_L);
-	Sleep(3000);
+	MoveToPoint(DEF_RIGHT_HAND,O_R,pose_deg_R,Rednt_alpha_R,vel_deg_R);
+	MoveToPoint(DEF_LEFT_HAND,O_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);
+	
+	//wait it
+	while(stillmoving)
+	{
+		rt=IsMoving(DEF_LEFT_HAND,&btemp);
+		if(rt==0)
+		{
+			stillmoving=btemp;
+		}
+		else
+		{
+			cnt_err++;//communication err
+			if(cnt_err==10) break;
+		}
+		Sleep(100);
+		printf("stillmoving..\n");	
+	}
+
 
 	//==open file
 	fstream file;
-	file.open("D://linemove_rec.csv",ios::out|ios::trunc);
+	file.open("D://rectangle_rec.csv",ios::out|ios::trunc);
 	
 	//==record para
 	float pos_deg[MAX_AXIS_NUM]={0};
-	int rt=0;
+	float pos_deg_last_ok[MAX_AXIS_NUM]={0};
+	
 	int n=0;
 	char buffer[100];
 	
 
 	//畫正方形做IK 測試
-	for(int t=0;t<=100;t++)
+	for(int t=1;t<=DEF_DESCRETE_POINT;t++)
 	{
-		//Read left hand
-		rt=Read_pos(DEF_LEFT_HAND,pos_deg,DEF_UNIT_DEG);
-		if(rt==0)
-		{
-			n=sprintf_s(buffer,sizeof(buffer),"%d,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,\n",t,pos_deg[Index_AXIS1],pos_deg[Index_AXIS2],pos_deg[Index_AXIS3],pos_deg[Index_AXIS4],pos_deg[Index_AXIS5],pos_deg[Index_AXIS6],pos_deg[Index_AXIS7]);
-			file.write(buffer,n);
-			//fprintf(file,buffer);
-		}
-
-		if(t<=25)
+		if(t<=0.25*DEF_DESCRETE_POINT)
 		{
 			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
 			{
-				Pend_R[f]=O_R[f]+(Q_R[f]-O_R[f])*t/25; 
-				Pend_L[f]=O_L[f]+(Q_L[f]-O_L[f])*t/25; 
+				Pend_R[f]=O_R[f]+(Q_R[f]-O_R[f])*t/((float)0.25*DEF_DESCRETE_POINT); 
+				Pend_L[f]=O_L[f]+(Q_L[f]-O_L[f])*t/((float)0.25*DEF_DESCRETE_POINT); 
 			}
 		}
-		else if(t<=50)
+		else if(t<=0.5*DEF_DESCRETE_POINT)
 		{
 			for(int f=0;f<3;f++)  
 			{
-				Pend_R[f]=Q_R[f]+(R_R[f]-Q_R[f])*(t-25)/25;
-				Pend_L[f]=Q_L[f]+(R_L[f]-Q_L[f])*(t-25)/25;
+				Pend_R[f]=Q_R[f]+(R_R[f]-Q_R[f])*(t-(float)0.25*DEF_DESCRETE_POINT)/((float)0.25*DEF_DESCRETE_POINT);
+				Pend_L[f]=Q_L[f]+(R_L[f]-Q_L[f])*(t-(float)0.25*DEF_DESCRETE_POINT)/((float)0.25*DEF_DESCRETE_POINT);
 			}
 		}
-		else if(t<=75)
+		else if(t<=0.75*DEF_DESCRETE_POINT)
 		{
 			for(int f=0;f<3;f++)  
 			{
-				Pend_R[f]=R_R[f]+(S_R[f]-R_R[f])*(t-50)/25;
-				Pend_L[f]=R_L[f]+(S_L[f]-R_L[f])*(t-50)/25;
+				Pend_R[f]=R_R[f]+(S_R[f]-R_R[f])*(t-(float)0.5*DEF_DESCRETE_POINT)/((float)0.25*DEF_DESCRETE_POINT);
+				Pend_L[f]=R_L[f]+(S_L[f]-R_L[f])*(t-(float)0.5*DEF_DESCRETE_POINT)/((float)0.25*DEF_DESCRETE_POINT);
 			}
 		}
 		else 
 		{
 			for(int f=0;f<3;f++)  
 			{
-				Pend_R[f]=S_R[f]+(O_R[f]-S_R[f])*(t-75)/25;
-				Pend_L[f]=S_L[f]+(O_L[f]-S_L[f])*(t-75)/25;
+				Pend_R[f]=S_R[f]+(O_R[f]-S_R[f])*(t-(float)0.75*DEF_DESCRETE_POINT)/((float)0.25*DEF_DESCRETE_POINT);
+				Pend_L[f]=S_L[f]+(O_L[f]-S_L[f])*(t-(float)0.75*DEF_DESCRETE_POINT)/((float)0.25*DEF_DESCRETE_POINT);
 			}
 		}
 	
+		vel_deg_L=0;//MAX speed
+		MoveToPoint_Dual(Pend_R,pose_deg_R,Rednt_alpha_R,vel_deg_R,Pend_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);  //20ms
+		//printf("Pend_R[%d]=[%4.2f,%4.2f,%4.2f],Pend_L[%d]=[%4.2f,%4.2f,%4.2f]\n",t,Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z],t,Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
 		
-		MoveToPoint_Dual(Pend_R,pose_deg_R,Rednt_alpha_R,Pend_L,pose_deg_L,Rednt_alpha_L);
-		//DBGMSG(("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]))
-		//printf("Pend_R[%d]=[%f,%f,%f],Pend_L[%d]=[%f,%f,%f]\n",t,Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z],Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
-		Sleep(100);
+		//==Delay
+		//QPDelay_ms(10);
+
+		//==Read left hand
+		rt=Read_pos(DEF_LEFT_HAND,pos_deg,DEF_UNIT_DEG);
+		if(rt==0)
+		{
+			for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+			{
+				printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg[i]);
+			}
+			printf("\n");
+
+			n=sprintf_s(buffer,sizeof(buffer),"%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",pos_deg[Index_AXIS1],pos_deg[Index_AXIS2],pos_deg[Index_AXIS3],pos_deg[Index_AXIS4],pos_deg[Index_AXIS5],pos_deg[Index_AXIS6],pos_deg[Index_AXIS7]);
+			file.write(buffer,n);
+			
+			memcpy(pos_deg_last_ok,pos_deg,sizeof(pos_deg_last_ok));
+		}
+		else //讀取失敗時，拿前一筆來補
+		{
+			for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+			{
+				printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_last_ok[i]);
+			}
+			printf("\n");
+
+			n=sprintf_s(buffer,sizeof(buffer),"%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",pos_deg_last_ok[Index_AXIS1],pos_deg_last_ok[Index_AXIS2],pos_deg_last_ok[Index_AXIS3],pos_deg_last_ok[Index_AXIS4],pos_deg_last_ok[Index_AXIS5],pos_deg_last_ok[Index_AXIS6],pos_deg_last_ok[Index_AXIS7]);
+			file.write(buffer,n);
+		}
 	}
 
 	return 0;
@@ -488,10 +546,10 @@ void TestMoveAndCatch()
 	float O_L[3]={500,50 ,0};
 	float pose_deg_L[3]={-60,0,0};
 	float Rednt_alpha_L=90;
-	
+	float vel_deg_L=13; //deg/s
 	//Move to O_L
 	printf("Move to 500,50,0...\n");
-	MoveToPoint(DEF_LEFT_HAND,O_L,pose_deg_L,Rednt_alpha_L);
+	MoveToPoint(DEF_LEFT_HAND,O_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);
 	Sleep(10000);
 
 	//Hold gripper
@@ -551,25 +609,7 @@ void TestStillMoving()
 
 }
 
-
-void QPDelay_ms(int t_ms)
-{
-	LARGE_INTEGER nFreq;
-	LARGE_INTEGER nBeginTime;
-	LARGE_INTEGER nEndTime;
-
-	QueryPerformanceFrequency(&nFreq);
 	
-
-	QueryPerformanceCounter(&nBeginTime); 
-	do
-	{
-		Sleep(0);
-		QueryPerformanceCounter(&nEndTime);
-		//printf("%f\n",(double)(nEndTime.QuadPart-nBeginTime.QuadPart)*1000/(double)nFreq.QuadPart);
-	}
-	while((double)(nEndTime.QuadPart-nBeginTime.QuadPart)*1000/(double)nFreq.QuadPart < t_ms);
-}		
 	
 
 void TestOneAxisInterpolation()
@@ -598,7 +638,6 @@ void TestOneAxisInterpolation()
 	int pos_pus=0;
 	int rt=0;
 	int n=0;
-	char buffer[100];
 	
 
 	for(int t=0;t<=10;t++)
@@ -642,20 +681,368 @@ void TestOneAxisInterpolation()
 
 }
 
+void WaitMotionDone()
+{
+	int rt=0;
+	bool stillmoving=true;
+	bool btemp=true;
+	int cnt_err=0;
+
+	//wait it
+	while(stillmoving)
+	{
+		rt=IsMoving(DEF_LEFT_HAND,&btemp);
+		if(rt==0)
+		{
+			stillmoving=btemp;
+		}
+		else
+		{
+			cnt_err++;//communication err
+			if(cnt_err==10)
+			{
+				printf("get moving status error\n");	
+				return;
+			};
+		}
+		Sleep(500);
+		printf("stillmoving..\n");	
+	}
+	
+}
+
+void WaitMotionDoneDual()
+{
+	int rt_R=0,rt_L=0;
+	bool stillmoving=true;
+	bool btemp_L=true,btemp_R=true;
+	int cnt_err=0;
+
+	//wait it
+	while(stillmoving)
+	{
+		rt_L=IsMoving(DEF_LEFT_HAND,&btemp_L);
+		rt_R=IsMoving(DEF_RIGHT_HAND,&btemp_R);
+		if((rt_R==0) && (rt_L==0))
+		{
+			stillmoving=btemp_L | btemp_R;
+		}
+		else
+		{
+			cnt_err++;//communication err
+			if(cnt_err==10)
+			{
+				printf("get moving status error\n");	
+				getchar();
+			};
+		}
+		Sleep(500);
+		printf("stillmoving..\n");	
+	}
+	
+}
+
+void TestGetDrink()
+{
+	float R_p0[3]={300,-300,-200};//起始點
+	float L_p0[3]={300,200,-200};//起始點
+
+	float R_p1[3]={500,50,-210};//門把位置
+	float L_p1[3]={300,200,-200};//左手不動
+
+	float Rp2x = 500;
+	float Rp2y = (50-650)*0.5;
+	float Rp2z = -210;
+	float rR2 = 50-Rp2y;
+	float R_p2[3] = {Rp2x,Rp2y,Rp2z};//拉門半徑圓心
+	float R_pp2[3]={150,-300,-210};
+	float L_p2[3]={300,200,-200};//左手不動
+
+
+	float R_p3[3]={150,-300,-210};//右手不動
+	float L_p3[3]={400,200,-200};//左手往前
+
+	float R_p4[3]={150,-300,-210};//右手不動
+	float L_p4[3]={400,100,-200};//左手往右
+
+	float R_p5[3]={150,-300,-210};
+	float L_p5[3]={520,-60,-200};//左手移動到綠色飲料  % pick the object
+	//====================
+
+	float R_p6[3]={150,-300,-210};//右手不動
+	float L_p6[3]={400,100,-200};//左手退回
+
+	float R_p7[3]={150,-300,-210};//右手不動
+	float L_p7[3]={400,200,-210};//左手下降
+
+	float Rp8x = 500;
+	float Rp8y = (50-650)*0.5;
+	float Rp8z = -210;
+	float rR8 = 50-Rp8y;
+	float R_p8[3] = {Rp8x,Rp8y,Rp8z};
+	float R_pp8[3] = {500,50,-210};//門把位置
+	float L_p8[3] = {400,200,-210};//左手不動
+
+	float R_p9[3]={500,50,-210};
+	float L_p9[3]={300,200,-210};//左手退回
+
+	float R_p10[3]={200,0,-300};
+	float L_p10[3]={200,0,-300};
+
+ 
+	float Pend_R[3]={0,0,0};
+	float pose_deg_R[3]={60,0,0};
+	float Rednt_alpha_R=-60;
+	float vel_deg_R=13;
+
+	float Pend_L[3]={0,0,0};
+	float pose_deg_L[3]={-50,0,0};
+	float Rednt_alpha_L=30;
+	float vel_deg_L=13;
+
+	//==open file
+	fstream fileR;
+	fstream fileL;
+	fileR.open("D://GetDrinkRec_R.csv",ios::out|ios::trunc);
+	fileL.open("D://GetDrinkRec_L.csv",ios::out|ios::trunc);
+	//==record para
+	float pos_deg_R[MAX_AXIS_NUM]={0};
+	float pos_deg_L[MAX_AXIS_NUM]={0};
+	float pos_deg_last_ok_R[MAX_AXIS_NUM]={0};
+	float pos_deg_last_ok_L[MAX_AXIS_NUM]={0};
+	
+	int n=0;
+	char buffer[100];
+	int rt=0;
+
+	//move to initial point
+	//MoveToPoint(DEF_RIGHT_HAND,R_p0,pose_deg_R,Rednt_alpha_R,vel_deg_R);
+	//MoveToPoint(DEF_LEFT_HAND,L_p0,pose_deg_L,Rednt_alpha_L,vel_deg_L);
+
+	printf("move to p0..\n");
+	//WaitMotionDoneDual();
+
+
+	//開冰箱拿飲料流程
+	
+	//各段點數
+	int BonPt[10]={0};//BonPt=boundary point	區段分界點		
+	//int SegPt[10]={600,2000,300,200,800,800,300,400,400,400};  //SegPt=segment point 各區段點數
+	
+	//SegPt=[600 2000 300 200 800 800 300 400 400 400];  %SegPt=segment point 各區段點數
+	int SegPt[10]={6,20,3,2,8,8,3,4,4,4};  //SegPt=segment point 各區段點數
+	//計算區段分界點
+	for(int i=0;i<10;i++)
+	{
+		for (int j=0;j<=i;j++)
+		{
+			BonPt[i]= BonPt[i]+SegPt[j];
+		}
+	}	    
+	
+
+	//總流程點數
+	int TotalPt=0;
+	for(int i=0;i<10;i++)
+	{
+		TotalPt+=SegPt[i];
+	}
+	
+	for(int t=1;t<=TotalPt;t++)
+	{
+		if(t<=BonPt[0])//右手移動到冰箱門把
+		{	
+			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
+			{
+				Pend_R[f]=R_p0[f]+(R_p1[f]-R_p0[f])*t/(float)SegPt[0]; 
+				Pend_L[f]=L_p0[f]+(L_p1[f]-L_p0[f])*t/(float)SegPt[0]; 
+			}
+		}
+		else if(t<=BonPt[1])//右手開冰箱門
+		{
+			if(t==(BonPt[0]+1))
+			{
+				//WaitMotionDoneDual();
+				//Gripper_LattePanda_Hold(DEF_RIGHT_HAND,true);
+			}
+
+			// R_p2為拉門半徑圓心
+			Pend_R[DEF_X]=R_p2[DEF_X]+rR2*((float)sin(0.5*DEF_PI*(t-BonPt[0])/(SegPt[1])+ DEF_PI));
+			Pend_R[DEF_Y]=R_p2[DEF_Y]+rR2*((float)cos(0.5*DEF_PI*(t-BonPt[0])/(SegPt[1])));
+			Pend_R[DEF_Z]=R_p2[DEF_Z]+rR2*0;	
+
+			for(int f=0;f<3;f++)  
+			{
+				Pend_L[f]=L_p1[f]+(L_p2[f]-L_p1[f])*(t-BonPt[0])/((float)SegPt[1]); 
+			}
+		}
+		else if(t<=BonPt[2])//左手往x移動100
+		{
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=R_pp2[f]+(R_p3[f]-R_pp2[f])*(t-(float)BonPt[1])/((float)SegPt[2]);
+				Pend_L[f]=L_p2[f]+(L_p3[f]-L_p2[f])*(t-(float)BonPt[1])/((float)SegPt[2]);
+			}
+		}
+		else if(t<=BonPt[3])//左手往y移動-100
+		{
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=R_p3[f]+(R_p4[f]-R_p3[f])*(t-(float)BonPt[2])/((float)SegPt[3]);
+				Pend_L[f]=L_p3[f]+(L_p4[f]-L_p3[f])*(t-(float)BonPt[2])/((float)SegPt[3]);
+			}		
+		}
+		else if(t<=BonPt[4])//左手移動到飲料點
+		{
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=R_p4[f]+(R_p5[f]-R_p4[f])*(t-(float)BonPt[3])/((float)SegPt[4]);
+				Pend_L[f]=L_p4[f]+(L_p5[f]-L_p4[f])*(t-(float)BonPt[3])/((float)SegPt[4]);
+			}	
+		}
+		else if(t<=BonPt[5])//左手退回
+		{
+			if(t==(BonPt[4]+1))//左手夾飲料
+			{
+				//WaitMotionDoneDual();
+				//Gripper_LattePanda_Hold(DEF_LEFT_HAND,true);
+			}
+
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=R_p5[f]+(R_p6[f]-R_p5[f])*(t-(float)BonPt[4])/((float)SegPt[5]);
+				Pend_L[f]=L_p5[f]+(L_p6[f]-L_p5[f])*(t-(float)BonPt[4])/((float)SegPt[5]);
+			}	
+		}
+		else if(t<=BonPt[6])//左手往z移動-10
+		{
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=R_p6[f]+(R_p7[f]-R_p6[f])*(t-(float)BonPt[5])/((float)SegPt[6]);
+				Pend_L[f]=L_p6[f]+(L_p7[f]-L_p6[f])*(t-(float)BonPt[5])/((float)SegPt[6]);
+			}	
+		}
+		else if(t<=BonPt[7])//右手關冰箱門
+		{
+			// R_p8為關門半徑圓心
+			Pend_R[DEF_X]=R_p8[DEF_X]+rR8*((float)cos(0.5*DEF_PI*(t-BonPt[6])/(SegPt[7])+ DEF_PI));
+			Pend_R[DEF_Y]=R_p8[DEF_Y]+rR8*((float)sin(0.5*DEF_PI*(t-BonPt[6])/(SegPt[7])));
+			Pend_R[DEF_Z]=R_p8[DEF_Z]+rR8*0;	
+
+			for(int f=0;f<3;f++)  
+			{
+				Pend_L[f]=L_p7[f]+(L_p8[f]-L_p7[f])*(t-(float)BonPt[6])/((float)SegPt[7]);
+			}	
+		}
+		else if(t<=BonPt[8])//左手往x移動-100
+		{
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=R_pp8[f]+(R_p9[f]-R_pp8[f])*(t-(float)BonPt[7])/((float)SegPt[8]);
+				Pend_L[f]=L_p8[f]+(L_p9[f]-L_p8[f])*(t-(float)BonPt[7])/((float)SegPt[8]);
+			}	
+		}
+		else if(t<=BonPt[9])//右手靠上去拿飲料
+		{
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=R_p9[f]+(R_p10[f]-R_p9[f])*(t-(float)BonPt[8])/((float)SegPt[9]);
+				Pend_L[f]=L_p9[f]+(L_p10[f]-L_p9[f])*(t-(float)BonPt[8])/((float)SegPt[9]);
+			}	
+		}
+
+		//vel_deg_R=20;//MAX speed
+		//vel_deg_L=20;//MAX speed
+		//MoveToPoint_Dual(Pend_R,pose_deg_R,Rednt_alpha_R,vel_deg_R,Pend_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);  //20ms
+
+		printf("Pend_R[%d]=[%f,%f,%f],Pend_L[%d]=[%f,%f,%f]\n",t,Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z],Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
+
+		n=sprintf_s(buffer,sizeof(buffer),"%4.1f,%4.1f,%4.1f\n",Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z]);
+		fileR.write(buffer,n);
+
+		n=sprintf_s(buffer,sizeof(buffer),"%4.1f,%4.1f,%4.1f\n",Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
+		fileL.write(buffer,n);
+
+
+
+		////==Read right hand
+		//rt=Read_pos(DEF_RIGHT_HAND,pos_deg_R,DEF_UNIT_DEG);
+
+		//if(rt==0)
+		//{
+		//	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+		//	{
+		//		printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_R[i]);
+		//	}
+		//	printf("\n");
+
+		//	n=sprintf_s(buffer,sizeof(buffer),"%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",pos_deg_R[Index_AXIS1],pos_deg_R[Index_AXIS2],pos_deg_R[Index_AXIS3],pos_deg_R[Index_AXIS4],pos_deg_R[Index_AXIS5],pos_deg_R[Index_AXIS6],pos_deg_R[Index_AXIS7]);
+		//	fileR.write(buffer,n);
+		//	
+		//	memcpy(pos_deg_last_ok_R,pos_deg_R,sizeof(pos_deg_last_ok_R));
+		//}
+		//else //讀取失敗時，拿前一筆來補
+		//{
+		//	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+		//	{
+		//		printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_last_ok_R[i]);
+		//	}
+		//	printf("\n");
+
+		//	n=sprintf_s(buffer,sizeof(buffer),"%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",pos_deg_last_ok_R[Index_AXIS1],pos_deg_last_ok_R[Index_AXIS2],pos_deg_last_ok_R[Index_AXIS3],pos_deg_last_ok_R[Index_AXIS4],pos_deg_last_ok_R[Index_AXIS5],pos_deg_last_ok_R[Index_AXIS6],pos_deg_last_ok_R[Index_AXIS7]);
+		//	fileR.write(buffer,n);
+		//}
+
+		////==Read left hand
+		//rt=Read_pos(DEF_LEFT_HAND,pos_deg_L,DEF_UNIT_DEG);
+
+		//if(rt==0)
+		//{
+		//	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+		//	{
+		//		printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_L[i]);
+		//	}
+		//	printf("\n");
+
+		//	n=sprintf_s(buffer,sizeof(buffer),"%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",pos_deg_L[Index_AXIS1],pos_deg_L[Index_AXIS2],pos_deg_L[Index_AXIS3],pos_deg_L[Index_AXIS4],pos_deg_L[Index_AXIS5],pos_deg_L[Index_AXIS6],pos_deg_L[Index_AXIS7]);
+		//	fileL.write(buffer,n);
+		//	
+		//	memcpy(pos_deg_last_ok_L,pos_deg_L,sizeof(pos_deg_last_ok_L));
+		//}
+		//else //讀取失敗時，拿前一筆來補
+		//{
+		//	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+		//	{
+		//		printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_last_ok_L[i]);
+		//	}
+		//	printf("\n");
+
+		//	n=sprintf_s(buffer,sizeof(buffer),"%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",pos_deg_last_ok_L[Index_AXIS1],pos_deg_last_ok_L[Index_AXIS2],pos_deg_last_ok_L[Index_AXIS3],pos_deg_last_ok_L[Index_AXIS4],pos_deg_last_ok_L[Index_AXIS5],pos_deg_last_ok_L[Index_AXIS6],pos_deg_last_ok_L[Index_AXIS7]);
+		//	fileL.write(buffer,n);
+		//}
+	}	
+
+	fileR.close();
+	fileL.close();
+	
+
+}
 
 int _tmain(int argc, _TCHAR* argv[])
 {
 	//===initial===///
-	int rt=DXL_Initial_x86();
-	if(rt==0)
-	{
-		printf("DXL_Initial_x86 failed\n");
-		getchar();
-		return 0;
-	}
+	//int rt=DXL_Initial_x86();
+	//if(rt==0)
+	//{
+	//	printf("DXL_Initial_x86 failed\n");
+	//	getchar();
+	//	return 0;
+	//}
 
-	
-	TestOneAxisInterpolation();
+	TestGetDrink();
+	//PID_Setting_Dual();
+	//getchar();
+	//TestOneAxisInterpolation();
 	//Gripper_LattePanda_Initial();
 
 	//Test Move And Catch
@@ -683,6 +1070,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//TestRectangle_Dual();
 	//}
 
+	getchar();
 	//TestMoveToHome_Dual();
 	//TestOutput();
 
@@ -694,7 +1082,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	
 	//TestReadPos();
 	
-	DXL_Terminate_x86();
+	//DXL_Terminate_x86();
 	//Gripper_LattePanda_Close();
 	getchar();
 	
