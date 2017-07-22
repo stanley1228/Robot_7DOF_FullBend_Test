@@ -386,7 +386,66 @@ void Record_LineMove_LeftHand()
 	file.close();
 
 }
+void WaitMotionDone()
+{
+	int rt=0;
+	bool stillmoving=true;
+	bool btemp=true;
+	int cnt_err=0;
 
+	//wait it
+	while(stillmoving)
+	{
+		rt=IsMoving(DEF_LEFT_HAND,&btemp);
+		if(rt==0)
+		{
+			stillmoving=btemp;
+		}
+		else
+		{
+			cnt_err++;//communication err
+			if(cnt_err==10)
+			{
+				printf("get moving status error\n");	
+				return;
+			}
+		}
+		Sleep(500);
+		printf("stillmoving..\n");	
+	}
+	
+}
+
+void WaitMotionDoneDual()
+{
+	int rt_R=0,rt_L=0;
+	bool stillmoving=true;
+	bool btemp_L=true,btemp_R=true;
+	int cnt_err=0;
+
+	//wait it
+	while(stillmoving)
+	{
+		rt_L=IsMoving(DEF_LEFT_HAND,&btemp_L);
+		rt_R=IsMoving(DEF_RIGHT_HAND,&btemp_R);
+		if((rt_R==0) && (rt_L==0))
+		{
+			stillmoving=btemp_L | btemp_R;
+		}
+		else
+		{
+			cnt_err++;//communication err
+			if(cnt_err==10)
+			{
+				printf("get moving status error\n");	
+				getchar();
+			}
+		}
+		Sleep(500);
+		printf("stillmoving..\n");	
+	}
+	
+}
 
 int Rec_Rectangle_Dual()
 {
@@ -536,6 +595,310 @@ int Rec_Rectangle_Dual()
 
 }
 
+int Get_Linear_fun_point(float t,float tk,float *Seqt,float (*SeqPt)[3],float (*SeqVel)[3],float (*SeqAcc)[3],float *P_out)
+{
+	int Pseg=0;
+	int VSeg=0;
+	int ASeg=0;
+	float P[3]={0};
+	int f=0;
+
+	//right
+	int Pcnt_R=0;//輸出總點數
+	
+	
+	if(t<tk)                //parabolic
+	{
+		Pseg=0;
+		VSeg=0;
+		ASeg=0;
+
+		for(f=0;f<3;f++)
+			P[f]=SeqPt[Pseg][f]+SeqVel[Pseg][f]*(t-0)+(float)0.5*SeqAcc[ASeg][f]*pow((t-0),2);  
+	}
+	else if (t<Seqt[1]-0.5*tk)   //linear
+	{
+		Pseg=0;
+		VSeg=1;
+		ASeg=1;
+		for(f=0;f<3;f++)
+			P[f]=SeqPt[Pseg][f]+SeqVel[VSeg][f]*(float)(t-0.5*tk);  
+	}
+	else if(t<Seqt[1]+0.5*tk)//parabolic
+	{
+		Pseg=0;
+		VSeg=1;    
+		ASeg=1;
+		for(f=0;f<3;f++)
+			P[f]=SeqPt[Pseg][f]+SeqVel[VSeg][f]*(float)((t-0.5*tk))+(float)(0.5*SeqAcc[ASeg][f]*pow((t-(Seqt[1]-0.5*tk)),2));  
+	}
+	else if (t<Seqt[2]-0.5*tk)      //linear 
+	{
+		Pseg=1;
+		VSeg=2;    
+		ASeg=1;
+		for(f=0;f<3;f++)
+			P[f]=SeqPt[Pseg][f]+SeqVel[VSeg][f]*(t-Seqt[1]);
+	}
+	else if( t< Seqt[2]+0.5*tk) //parabolic
+	{
+		Pseg=1;
+		VSeg=2;   
+		ASeg=2;
+		for(f=0;f<3;f++)
+			P[f]=SeqPt[Pseg][f]+(float)SeqVel[VSeg][f]*(t-Seqt[1])+(float)(0.5*SeqAcc[ASeg][f]*pow((t-(Seqt[2]-0.5*tk)),2));  
+	}
+	else if (t<Seqt[3]-0.5*tk)      //linear 
+	{
+		Pseg=2;
+		VSeg=3;    
+		ASeg=2;
+		for(f=0;f<3;f++)
+			P[f]=SeqPt[Pseg][f]+SeqVel[VSeg][f]*(t-Seqt[2]);
+	}
+	else if (t< Seqt[3]+0.5*tk) //parabolic
+	{
+		Pseg=2;
+		VSeg=3;   
+		ASeg=3;
+		for(f=0;f<3;f++)
+			P[f]=SeqPt[Pseg][f]+(float)SeqVel[VSeg][f]*(t-Seqt[2])+(float)(0.5*SeqAcc[ASeg][f]*pow((t-(Seqt[3]-0.5*tk)),2));          
+	}
+            
+	else if (t< Seqt[4]-tk) //linear before final
+	{
+		Pseg=3;
+		VSeg=4;   
+		ASeg=3;
+		for(f=0;f<3;f++)
+			P[f]=SeqPt[Pseg][f]+SeqVel[VSeg][f]*(t-Seqt[3]);
+	}
+	else if (t< Seqt[4])//parabolic  final
+	{
+		Pseg=3;
+		VSeg=4;   
+		ASeg=4;
+		for(f=0;f<3;f++)
+			P[f]=SeqPt[Pseg][f]+SeqVel[VSeg][f]*(t-Seqt[3])+(float)0.5*SeqAcc[ASeg][f]*pow((t-(Seqt[4]-tk)),2);  
+	}
+
+	memcpy(P_out,P,sizeof(P));
+
+	return 0;
+}
+
+
+void Rec_Rectangle_Linear_function_Dual()
+{
+	const int RowSize=5;
+	const int ColSize=3;
+	float SeqPt_R[RowSize][ColSize]={{500,-50,0},
+						{500,-200,0},
+						{500,-200,-200},
+						{500,-50,-200},
+						{500,-50,0}};
+
+	float SeqPt_L[RowSize][ColSize]={{500,50,0},
+						{500,200,0},
+						{500,200,-200},
+						{500,50,-200},
+						{500,50,0}};
+
+	float Seqt_R[RowSize]={0,2,4,6,8};
+	float TotalTime_R=8;
+	float tk_R=0.5;//二次曲線的時間
+
+
+	float Seqt_L[RowSize]={0,2,4,6,8};
+	float TotalTime_L=8;
+	float tk_L=0.5;//二次曲線的時間
+
+	float SeqVel_R[RowSize+1][ColSize]={0};
+	float SeqAcc_R[RowSize][ColSize]={0};
+
+	float SeqVel_L[RowSize+1][ColSize]={0};
+	float SeqAcc_L[RowSize][ColSize]={0};
+
+	//==計算Cartesian Space下各段速度==%
+	//right
+	int i=0;
+	int f=0;
+	for(i=0;i<RowSize;i++)
+	{
+		if(i==0)        //V0
+		{
+			for(f=0;f<3;f++)
+				SeqVel_R[i][f]=0;
+		}
+		else if (i==1 || i==(RowSize-1))  //V1 or Vf前一筆
+		{
+			for(f=0;f<3;f++)
+			{
+				SeqVel_R[i][f]=(SeqPt_R[i][f]-SeqPt_R[i-1][f])/(float)(Seqt_R[i]-Seqt_R[i-1]-0.5*tk_R); 
+			
+			}
+		}
+		else if (i==RowSize-1)
+		{
+			for(f=0;f<3;f++)
+				SeqVel_R[i][f]=0;
+		}
+		else
+			SeqVel_R[i][f]=(SeqPt_R[i][f]-SeqPt_R[i-1][f])/(Seqt_R[i]-Seqt_R[i-1]);   
+	}
+
+	//left
+	for(i=0;i<RowSize;i++)
+	{
+		if(i==0)        //V0
+		{
+			for(f=0;f<3;f++)
+				SeqVel_L[i][f]=0;
+		}
+		else if (i==1 || i==(RowSize-1))  //V1 or Vf前一筆
+		{
+			for(f=0;f<3;f++)
+			{
+				SeqVel_L[i][f]=(SeqPt_L[i][f]-SeqPt_L[i-1][f])/(float)(Seqt_L[i]-Seqt_L[i-1]-0.5*tk_L); 
+			
+			}
+		}
+		else if (i==RowSize-1)
+		{
+			for(f=0;f<3;f++)
+				SeqVel_L[i][f]=0;
+		}
+		else
+			SeqVel_L[i][f]=(SeqPt_L[i][f]-SeqPt_L[i-1][f])/(Seqt_L[i]-Seqt_L[i-1]);   
+	}
+	//==計算Cartesian Space各段加速度==//
+	//right
+	for(i=0;i<RowSize+1;i++)
+	{
+		for(f=0;f<3;f++)
+			SeqAcc_R[i][f]=(SeqVel_R[i+1][f]-SeqVel_R[i][f])/tk_R;
+	}
+	//left
+	for(i=0;i<RowSize+1+1;i++)
+	{
+		for(f=0;f<3;f++)
+			SeqAcc_R[i][f]=(SeqVel_L[i+1][f]-SeqVel_L[i][f])/tk_L;
+	}
+
+	//==手臂參數設定==//
+	float Pend_R[3]={0,0,0};
+	float pose_deg_R[3]={60,0,0};
+	float Rednt_alpha_R=-90;
+	float vel_deg_R=13;
+
+	float Pend_L[3]={0,0,0};
+	float pose_deg_L[3]={-60,0,0};
+	float Rednt_alpha_L=90;
+	float vel_deg_L=13;
+
+	int rt=0;
+	bool stillmoving=true;
+	bool btemp=true;
+	int cnt_err=0;
+
+	//move to initial point
+	MoveToPoint(DEF_RIGHT_HAND,SeqPt_R[0],pose_deg_R,Rednt_alpha_R,vel_deg_R);
+	MoveToPoint(DEF_LEFT_HAND,SeqPt_L[0],pose_deg_L,Rednt_alpha_L,vel_deg_L);
+	
+	//wait it
+	WaitMotionDoneDual();
+
+
+	//==open file
+	fstream fileR;
+	fstream fileL;
+	fileR.open("D://Rec_Linear_fun_R.csv",ios::out|ios::trunc);
+	fileL.open("D://Rec_Linear_fun_L.csv",ios::out|ios::trunc);
+	//==record para
+	float pos_deg_R[MAX_AXIS_NUM]={0};
+	float pos_deg_L[MAX_AXIS_NUM]={0};
+	float pos_deg_last_ok_R[MAX_AXIS_NUM]={0};
+	float pos_deg_last_ok_L[MAX_AXIS_NUM]={0};
+	int n=0;
+	char buffer[100];
+
+
+
+	//==使用linear fuction 規劃方形各段軌跡  共5點  4段直線斷  5段二次段==//
+	float DEF_CYCLE_TIME=0.1f;
+	float t=0;
+	
+	
+	for(t=0;t<TotalTime_R;t+=DEF_CYCLE_TIME)
+	{
+		//int Get_Linear_fun_point(float t,float tk,float *Seqt,float *SeqPt[3],float *SeqVel[3],float *SeqAcc[3],float *P_out);
+
+		Get_Linear_fun_point(t,tk_R,Seqt_R,SeqPt_R,SeqVel_R,SeqAcc_R,Pend_R);//right
+		Get_Linear_fun_point(t,tk_L,Seqt_L,SeqPt_L,SeqVel_L,SeqAcc_L,Pend_L);//left
+
+		vel_deg_R=0;//MAX speed
+		vel_deg_L=0;
+		MoveToPoint_Dual(Pend_R,pose_deg_R,Rednt_alpha_R,vel_deg_R,Pend_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);  //20ms
+		printf("Pend_R[%d]=[%4.2f,%4.2f,%4.2f],Pend_L[%d]=[%4.2f,%4.2f,%4.2f]\n",t,Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z],t,Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
+		
+		//==Read right hand
+		rt=Read_pos(DEF_RIGHT_HAND,pos_deg_R,DEF_UNIT_DEG);
+
+		if(rt==0)
+		{
+			for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+			{
+				printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_R[i]);
+			}
+			printf("\n");
+
+			n=sprintf_s(buffer,sizeof(buffer),"%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",pos_deg_R[Index_AXIS1],pos_deg_R[Index_AXIS2],pos_deg_R[Index_AXIS3],pos_deg_R[Index_AXIS4],pos_deg_R[Index_AXIS5],pos_deg_R[Index_AXIS6],pos_deg_R[Index_AXIS7]);
+			fileR.write(buffer,n);
+			
+			memcpy(pos_deg_last_ok_R,pos_deg_R,sizeof(pos_deg_last_ok_R));
+		}
+		else //讀取失敗時，拿前一筆來補
+		{
+			for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+			{
+				printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_last_ok_R[i]);
+			}
+			printf("\n");
+
+			n=sprintf_s(buffer,sizeof(buffer),"%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",pos_deg_last_ok_R[Index_AXIS1],pos_deg_last_ok_R[Index_AXIS2],pos_deg_last_ok_R[Index_AXIS3],pos_deg_last_ok_R[Index_AXIS4],pos_deg_last_ok_R[Index_AXIS5],pos_deg_last_ok_R[Index_AXIS6],pos_deg_last_ok_R[Index_AXIS7]);
+			fileR.write(buffer,n);
+		}
+
+		//==Read left hand
+		rt=Read_pos(DEF_LEFT_HAND,pos_deg_L,DEF_UNIT_DEG);
+
+		if(rt==0)
+		{
+			for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+			{
+				printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_L[i]);
+			}
+			printf("\n");
+
+			n=sprintf_s(buffer,sizeof(buffer),"%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",pos_deg_L[Index_AXIS1],pos_deg_L[Index_AXIS2],pos_deg_L[Index_AXIS3],pos_deg_L[Index_AXIS4],pos_deg_L[Index_AXIS5],pos_deg_L[Index_AXIS6],pos_deg_L[Index_AXIS7]);
+			fileL.write(buffer,n);
+			
+			memcpy(pos_deg_last_ok_L,pos_deg_L,sizeof(pos_deg_last_ok_L));
+		}
+		else //讀取失敗時，拿前一筆來補
+		{
+			for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+			{
+				printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_last_ok_L[i]);
+			}
+			printf("\n");
+
+			n=sprintf_s(buffer,sizeof(buffer),"%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",pos_deg_last_ok_L[Index_AXIS1],pos_deg_last_ok_L[Index_AXIS2],pos_deg_last_ok_L[Index_AXIS3],pos_deg_last_ok_L[Index_AXIS4],pos_deg_last_ok_L[Index_AXIS5],pos_deg_last_ok_L[Index_AXIS6],pos_deg_last_ok_L[Index_AXIS7]);
+			fileL.write(buffer,n);
+		}
+	}
+}
+
 void TestMoveAndCatch()
 {
 	//Move to intial
@@ -681,66 +1044,7 @@ void TestOneAxisInterpolation()
 
 }
 
-void WaitMotionDone()
-{
-	int rt=0;
-	bool stillmoving=true;
-	bool btemp=true;
-	int cnt_err=0;
 
-	//wait it
-	while(stillmoving)
-	{
-		rt=IsMoving(DEF_LEFT_HAND,&btemp);
-		if(rt==0)
-		{
-			stillmoving=btemp;
-		}
-		else
-		{
-			cnt_err++;//communication err
-			if(cnt_err==10)
-			{
-				printf("get moving status error\n");	
-				return;
-			};
-		}
-		Sleep(500);
-		printf("stillmoving..\n");	
-	}
-	
-}
-
-void WaitMotionDoneDual()
-{
-	int rt_R=0,rt_L=0;
-	bool stillmoving=true;
-	bool btemp_L=true,btemp_R=true;
-	int cnt_err=0;
-
-	//wait it
-	while(stillmoving)
-	{
-		rt_L=IsMoving(DEF_LEFT_HAND,&btemp_L);
-		rt_R=IsMoving(DEF_RIGHT_HAND,&btemp_R);
-		if((rt_R==0) && (rt_L==0))
-		{
-			stillmoving=btemp_L | btemp_R;
-		}
-		else
-		{
-			cnt_err++;//communication err
-			if(cnt_err==10)
-			{
-				printf("get moving status error\n");	
-				getchar();
-			};
-		}
-		Sleep(500);
-		printf("stillmoving..\n");	
-	}
-	
-}
 
 void TestGetDrink()
 {
@@ -1028,6 +1332,7 @@ void TestGetDrink()
 
 }
 
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	//===initial===///
@@ -1038,7 +1343,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//	getchar();
 	//	return 0;
 	//}
-
+	Rec_Rectangle_Linear_function_Dual();
 	TestGetDrink();
 	//PID_Setting_Dual();
 	//getchar();
