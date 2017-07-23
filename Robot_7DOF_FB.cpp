@@ -1214,11 +1214,11 @@ int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R
 
 	//inverse kinematics left hand
 	rt= IK_7DOF_FB7roll(DEF_LEFT_HAND,linkL,base_L,Pend_L,Pose_rad_L,Rednt_alpha_rad_L,theta_L);
-	for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
-	{
-		DBGMSG(("L%d:%3.0f, ",gMapAxisNO[i],theta_L[i]*DEF_RATIO_RAD_TO_DEG))
-	}
-	DBGMSG(("\n"))
+	//for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+	//{
+	//	DBGMSG(("L%d:%3.0f, ",gMapAxisNO[i],theta_L[i]*DEF_RATIO_RAD_TO_DEG))
+	//}
+	//DBGMSG(("\n"))
 	
 	//==prevent angle over constrain left hand 
 	over_index=0;
