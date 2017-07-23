@@ -244,7 +244,7 @@ enum{
 #define AXISL7_MAX_TORQUE 517	//50%
 
 //==PID P gain==//
-#define AXISR1_P_GAIN	32		
+#define AXISR1_P_GAIN	40		
 #define AXISR2_P_GAIN	32
 #define AXISR3_P_GAIN	32
 #define AXISR4_P_GAIN	32
@@ -252,7 +252,7 @@ enum{
 #define AXISR6_P_GAIN	32
 #define AXISR7_P_GAIN	32
 
-#define AXISL1_P_GAIN	32		
+#define AXISL1_P_GAIN	40		
 #define AXISL2_P_GAIN	32
 #define AXISL3_P_GAIN	32
 #define AXISL4_P_GAIN	32
@@ -261,7 +261,7 @@ enum{
 #define AXISL7_P_GAIN	32
 
 //==PID I gain==//
-#define AXISR1_I_GAIN	15		
+#define AXISR1_I_GAIN	20		
 #define AXISR2_I_GAIN	15
 #define AXISR3_I_GAIN	15
 #define AXISR4_I_GAIN	15
@@ -269,7 +269,7 @@ enum{
 #define AXISR6_I_GAIN	15
 #define AXISR7_I_GAIN	15
 
-#define AXISL1_I_GAIN	15		
+#define AXISL1_I_GAIN	20	
 #define AXISL2_I_GAIN	15
 #define AXISL3_I_GAIN	15
 #define AXISL4_I_GAIN	15
@@ -435,7 +435,7 @@ static const float grobot_lim_pus_L_High[MAX_AXIS_NUM]=
 #define Y_BASE 0
 #define Z_BASE 0
 
-#define DEF_VERY_SMALL (1.e-5)//很小的量判斷為0使用
+#define DEF_VERY_SMALL (1.e-4)//很小的量判斷為0使用
 
 //==========
 //Function
