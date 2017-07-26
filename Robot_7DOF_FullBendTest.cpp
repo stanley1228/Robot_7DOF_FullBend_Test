@@ -1085,11 +1085,11 @@ void TestOneAxisInterpolation()
 
 
 //#define CHECK_CARTESIAN_PATH 
-#define GRIPPER_ON_LATTE
+//#define GRIPPER_ON_LATTE
 #define MOVETOPOINT_DUAL
 //#define CHECK_JOINT_PATH   //MoveToPoint_Dual函式 那邊也要def
 #define MOVE_TO_INITIAL_POINT
-//#define RECORD_JOINT_ANGLE
+#define RECORD_JOINT_ANGLE
 
 #ifdef  CHECK_JOINT_PATH
 fstream gfileR;
@@ -1098,22 +1098,24 @@ fstream gfileL;
 void TestGetDrink()
 {
 	//==路徑點
-	float R_p[5][3]={   
+	float R_p[7][3]={   
 		{300, -300, -200},	//起始點
-		{500,	50, -100},	//門把關門狀態位置
-		{150, -300, -100},	//門把開門狀態位置
-		{500,	50, -100},	//門把關門狀態位置
-		{200, -100, -300}};		//最後雙手握飲料位置
+		{480,	80, -100},	//門把關門狀態位置
+		{130, -270, -100},	//門把開門狀態位置
+		{480,	80, -100},	//門把關門狀態位置
+		{410,	 0, -80},	//右手從門把關門狀態位置退回中途1
+		{350,	 0, -80},	//右手從門把關門狀態位置退回中途2
+		{200, -100, -200}};//最後雙手握飲料位置
 
 	float L_p[8][3]={  
 		{300, 200, -200},	//起始點
-		{400, 200, -200},	//左手往綠飲料點前進中途1
-		{400, 100, -200},	//左手往綠飲料點前進中途2
-		{520, -60, -200},	//綠飲料點
-		{400, 100, -200},	//左手從綠飲料點退回中途1
-		{400, 200, -210},	//左手從綠飲料點退回中途2
-		{300, 200, -210},	//左手從綠飲料點退回中途3
-		{200,   0, -300}};	//最後雙手握飲料位置
+		{350, 150, -150},	//左手往綠飲料點前進中途1
+		{400, 30, -80},	//左手往綠飲料點前進中途2
+		{570, -60, -40},	//綠飲料點
+		{430, 30, -40},	//左手從綠飲料點退回中途1
+		{300, 150, -200},	//左手從綠飲料點退回中途2
+		{300, 200, -200},	//左手從綠飲料點退回中途3
+		{200, 100, -200}};	//最後雙手握飲料位置
 
 	//==開關門路徑半徑及圓心
 	float rDoorPath = 50-(50-650)*0.5;
@@ -1148,11 +1150,15 @@ void TestGetDrink()
 	i=i+1;
 	Seqt[i]=155;//右手夾爪rlease
 	i=i+1;
-	Seqt[i]=160;//左手從綠飲料點退回中途3
+	Seqt[i]=175;//右手從門把關門狀態位置退回中途1
 	i=i+1;
-	Seqt[i]=170;//左右手回到最後雙手握飲料位置
+	Seqt[i]=195;//右手從門把關門狀態位置退回中途2
+	i=i+1;
+	Seqt[i]=215;//左手從綠飲料點退回中途3
+	i=i+1;
+	Seqt[i]=230;//左右手回到最後雙手握飲料位置
 
-	float TotalTime=170;
+	float TotalTime=230;
 	float SeqItv[SegTimeSize-1]={0};//Sequence  invterval
 	
 	for(i=0;i<SegTimeSize-1;i++)
@@ -1165,7 +1171,7 @@ void TestGetDrink()
 #ifndef RECORD_JOINT_ANGLE
 	float CycleT=0.04f; //不讀feedback時 大約22m
 #else
-	float CycleT=0.058f; //有讀feedback時需要 22+17+17=56ms 19+16+16=51ms
+	float CycleT=0.1f; //有讀feedback時需要 22+17+17=56ms 19+16+16=51ms
 #endif
 
 	//float CycleT=0.040f; //單隻手沒接的不讀取
@@ -1206,7 +1212,7 @@ void TestGetDrink()
 	float pos_deg_last_ok_L[MAX_AXIS_NUM]={0};
 	int n=0;
 	int rt=0;
-
+	char buffer[100];
 	//==Robotic arm pose==//
 	float Pend_R[3]={0,0,0};
 	float pose_deg_R[3]={60,0,0};
@@ -1215,7 +1221,7 @@ void TestGetDrink()
 
 	float Pend_L[3]={0,0,0};
 	float pose_deg_L[3]={-50,0,0};
-	float Rednt_alpha_L=30;
+	float Rednt_alpha_L=50;
 	float vel_deg_L=5;
 
 	//==move to initial point==//
@@ -1396,7 +1402,7 @@ void TestGetDrink()
 				Pend_L[f]=L_p[5][f];//左手固定
 			}	
 		}
-		else if(abst<=Seqt[12])//左手從綠飲料點退回中途3 %左手往x移動-100
+		else if(abst<=Seqt[12])//)右手從門把關門狀態位置退回中途1
 		{
 			GripperAlreadyAct=0; //clear the gripper status of last segemnt
 
@@ -1405,18 +1411,44 @@ void TestGetDrink()
 
 			for(int f=0;f<3;f++)  
 			{
-				Pend_R[f]=R_p[3][f];//右手固定
-				Pend_L[f]=L_p[5][f]+(L_p[6][f]-L_p[5][f])*t/Itv;
+				Pend_R[f]=R_p[3][f]+(R_p[4][f]-R_p[3][f])*t/Itv;
+				Pend_L[f]=L_p[5][f];//左手固定
 			}	
 		}
-		else if(abst<=Seqt[13])//左右手回到最後雙手握飲料位置
+		else if(abst<=Seqt[13])//)右手從門把關門狀態位置退回中途2
 		{
 			Itv=SeqItv[12];
 			t=abst-Seqt[12];
 
 			for(int f=0;f<3;f++)  
 			{
-				Pend_R[f]=R_p[3][f]+(R_p[4][f]-R_p[3][f])*t/Itv; 
+				Pend_R[f]=R_p[4][f]+(R_p[5][f]-R_p[4][f])*t/Itv;
+				Pend_L[f]=L_p[5][f];//左手固定
+			}	
+		}
+
+//////////////////
+		else if(abst<=Seqt[13])//左手從綠飲料點退回中途3 %左手往x移動-100
+		{
+			GripperAlreadyAct=0; //clear the gripper status of last segemnt
+
+			Itv=SeqItv[13];
+			t=abst-Seqt[13];
+
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=R_p[5][f];//右手固定
+				Pend_L[f]=L_p[5][f]+(L_p[6][f]-L_p[5][f])*t/Itv;
+			}	
+		}
+		else if(abst<=Seqt[14])//左右手回到最後雙手握飲料位置
+		{
+			Itv=SeqItv[12];
+			t=abst-Seqt[12];
+
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=R_p[5][f]+(R_p[6][f]-R_p[5][f])*t/Itv; 
 				Pend_L[f]=L_p[6][f]+(L_p[7][f]-L_p[6][f])*t/Itv;
 			}	
 		}
@@ -1424,7 +1456,7 @@ void TestGetDrink()
 		{
 			for(int f=0;f<3;f++)  
 			{
-				Pend_R[f]=R_p[4][f]; 
+				Pend_R[f]=R_p[6][f]; 
 				Pend_L[f]=L_p[7][f];
 			}
 		}
@@ -1464,6 +1496,7 @@ void TestGetDrink()
 			//}
 			printf("\n");
 
+			
 			n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",abst,pos_deg_R[Index_AXIS1],pos_deg_R[Index_AXIS2],pos_deg_R[Index_AXIS3],pos_deg_R[Index_AXIS4],pos_deg_R[Index_AXIS5],pos_deg_R[Index_AXIS6],pos_deg_R[Index_AXIS7]);
 			fileR.write(buffer,n);
 			
@@ -1560,8 +1593,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//====================//
 	//===initial gripper==//
 	//====================//
-	printf("Gripper_LattePanda_Initial...\n");
-	Gripper_LattePanda_Initial();
+	//printf("Gripper_LattePanda_Initial...\n");
+	//Gripper_LattePanda_Initial();
 
 	//====================//
 	//===MoveToSelectPoint==//
