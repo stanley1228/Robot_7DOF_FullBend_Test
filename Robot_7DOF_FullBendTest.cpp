@@ -1090,7 +1090,7 @@ void TestOneAxisInterpolation()
 //#define CHECK_JOINT_PATH   //MoveToPoint_Dual函式 那邊也要def
 #define MOVE_TO_INITIAL_POINT
 #define RECORD_JOINT_ANGLE
-
+#define DEF_WAIT_ENTER
 #ifdef  CHECK_JOINT_PATH
 fstream gfileR;
 fstream gfileL;
@@ -1122,7 +1122,7 @@ void TestGetDrink()
 	float Cen_DoorPath[3] = {500,(50-650)*0.5, -100}; //拉門半徑圓心 center of open door path
 
 	//==絕時間標計及總時間
-	const int SegTimeSize=14;
+	const int SegTimeSize=16;
 	float Seqt[SegTimeSize]= {0};//絕對時間標計 Sequence time
 
 	int i=0;
@@ -1230,14 +1230,16 @@ void TestGetDrink()
 	MoveToPoint(DEF_RIGHT_HAND,R_p[0],pose_deg_R,Rednt_alpha_R,vel_deg_R);
 	MoveToPoint(DEF_LEFT_HAND,L_p[0],pose_deg_L,Rednt_alpha_L,vel_deg_L);
 	printf("move to p0..\n");
-	//WaitMotionDoneDual();
+	WaitMotionDoneDual();
 #endif
 	
 	printf("press any key to continue...\n");
+#ifdef	DEF_WAIT_ENTER
 	getchar();
-
+#endif
 	//==飲料流程開始==//
-	for(float abst=0;abst<=TotalTime;abst+=CycleT)
+	float abst=0.0;
+	for(abst=0.0;abst<(TotalTime+CycleT);abst+=CycleT)
 	{
 		if(abst<=Seqt[1])//右手往門把關門狀態位置移動
 		{	
@@ -1258,7 +1260,9 @@ void TestGetDrink()
 			if(GripperAlreadyAct==0)
 			{
 				printf("press any key to continue...\n");
+#ifdef	DEF_WAIT_ENTER
 				getchar();
+#endif
 #ifdef GRIPPER_ON_LATTE
 				Gripper_LattePanda_Hold(DEF_RIGHT_HAND,true,1200);
 #endif
@@ -1330,7 +1334,9 @@ void TestGetDrink()
 			{
 #ifdef GRIPPER_ON_LATTE
 				printf("press any key to continue...\n");
+#ifdef	DEF_WAIT_ENTER
 				getchar();
+#endif
 				Gripper_LattePanda_Hold(DEF_LEFT_HAND,true,500);
 #endif
 				GripperAlreadyAct=1;
@@ -1390,7 +1396,9 @@ void TestGetDrink()
 			{
 #ifdef GRIPPER_ON_LATTE
 				printf("press any key to continue...\n");
+#ifdef	DEF_WAIT_ENTER
 				getchar();
+#endif
 				Gripper_LattePanda_Hold(DEF_RIGHT_HAND,false,500);
 #endif
 				GripperAlreadyAct=1;
@@ -1428,7 +1436,7 @@ void TestGetDrink()
 		}
 
 //////////////////
-		else if(abst<=Seqt[13])//左手從綠飲料點退回中途3 %左手往x移動-100
+		else if(abst<=Seqt[14])//左手從綠飲料點退回中途3 %左手往x移動-100
 		{
 			GripperAlreadyAct=0; //clear the gripper status of last segemnt
 
@@ -1441,10 +1449,10 @@ void TestGetDrink()
 				Pend_L[f]=L_p[5][f]+(L_p[6][f]-L_p[5][f])*t/Itv;
 			}	
 		}
-		else if(abst<=Seqt[14])//左右手回到最後雙手握飲料位置
+		else if(abst<=Seqt[15])//左右手回到最後雙手握飲料位置
 		{
-			Itv=SeqItv[12];
-			t=abst-Seqt[12];
+			Itv=SeqItv[14];
+			t=abst-Seqt[14];
 
 			for(int f=0;f<3;f++)  
 			{
@@ -1642,7 +1650,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//Sleep(1500);
 
 	DXL_Terminate_x86();
-	Gripper_LattePanda_Close();
+	//Gripper_LattePanda_Close();
 	
 	return 0;
 }
