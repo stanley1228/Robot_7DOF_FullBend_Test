@@ -13,6 +13,20 @@ using namespace std;
 
 
 #define DEF_DESCRETE_POINT 1000
+
+
+#define CHECK_CARTESIAN_PATH 
+//#define GRIPPER_ON_LATTE
+//#define MOVETOPOINT_DUAL
+//#define CHECK_JOINT_PATH   //MoveToPoint_Dual函式 那邊也要def
+//#define MOVE_TO_INITIAL_POINT
+//#define RECORD_JOINT_ANGLE
+#define DEF_WAIT_ENTER
+#ifdef  CHECK_JOINT_PATH
+fstream gfileR;
+fstream gfileL;
+#endif
+
 int TestRectangle_Dual()
 {
 	float O_R[3]={500,-50 ,0};
@@ -1084,17 +1098,6 @@ void TestOneAxisInterpolation()
 
 
 
-//#define CHECK_CARTESIAN_PATH 
-//#define GRIPPER_ON_LATTE
-#define MOVETOPOINT_DUAL
-//#define CHECK_JOINT_PATH   //MoveToPoint_Dual函式 那邊也要def
-#define MOVE_TO_INITIAL_POINT
-#define RECORD_JOINT_ANGLE
-#define DEF_WAIT_ENTER
-#ifdef  CHECK_JOINT_PATH
-fstream gfileR;
-fstream gfileL;
-#endif
 void TestGetDrink()
 {
 	//==路徑點
@@ -1582,19 +1585,441 @@ void MoveToSelectPoint()
 	}
 }
 
+
+enum{
+	S_INITIAL=0,
+	S_RL_HOLD_1,
+	S_RL_F_200,
+	S_R_REL_1,
+	S_R_X_B_200_S1,
+	S_R_HOLD_1,
+	S_R_X_CIRF_200_L_X_CIRB_200,
+	S_R_REL_2,
+	S_R_X_B_200_S2,
+	S_R_HOLD_2,
+	S_R_X_F_200_L_X_F_200,
+};
+void TestSewingAction()
+{
+	const int SegSize=11;
+	//==路徑點
+	float R_p[SegSize][3]={   
+		{300,	-10, 0},	//起始點
+		{300,	-10, 0},	//左右手夾緊1
+		{500,	-10, 0},	//右手往前200 %左手往前200
+		{500,	-10, 0},	//右手鬆開1
+		{300,	-10, 0},	//右手x往後退200 %左手不動
+		{300,	-10, 0},	//右手夾緊1
+		{500,	-10, 0},	//右手x 圓周往前200 %左手x圓周往後200
+		{500,	-10, 0},	//右手鬆開2
+		{300,	-10, 0},	//右手x往後200 %左手不動
+		{300,	-10, 0},	//右手夾緊2
+		{500,	-10, 0}};	//右手往前200 %左手往前200
+		
+	float L_p[SegSize][3]={  
+		{300, 90, 0},	//起始點
+		{300, 90, 0},	//左右手夾緊1
+		{500, 90, 0},	//右手往前200 %左手x往前200
+		{500, 90, 0},	//右手鬆開1
+		{500, 90, 0},	//右手x往後退200 %左手不動
+		{500, 90, 0},	//右手夾緊1
+		{300, 90, 0},	//右手x 圓周往前200 %左手x圓周往後200  
+		{300, 90, 0},	//右手鬆開2
+		{300, 90, 0},	//右手x往後200 %左手不動
+		{300, 90, 0},	//右手夾緊2
+		{500, 90, 0}};	//右手x往前200 %左手x往前200
+		
+	//==各段花費時間==//
+	float SeqItv[SegSize]={0};//Sequence  invterval
+
+	SeqItv[S_INITIAL]=0;
+	SeqItv[S_RL_HOLD_1]=2;
+	SeqItv[S_RL_F_200]=10;
+	SeqItv[S_R_REL_1]=2;
+	SeqItv[S_R_X_B_200_S1]=10;
+	SeqItv[S_R_HOLD_1]=2;
+	SeqItv[S_R_X_CIRF_200_L_X_CIRB_200]=10;
+	SeqItv[S_R_REL_2]=2;
+	SeqItv[S_R_X_B_200_S2]=10;
+	SeqItv[S_R_HOLD_2]=2;
+	SeqItv[S_R_X_F_200_L_X_F_200]=10;
+
+	//==絕對時間標計==//
+	float Seqt[SegSize]={0};
+	float CurT=0;
+
+	for(int i=0;i<SegSize;i++)
+	{
+		CurT=CurT+SeqItv[i];
+		Seqt[i]=CurT;
+	}
+	float TotalTime=CurT;
+	
+	
+
+	//==流程需用變數
+	//float CycleT=0.1f;
+#ifndef RECORD_JOINT_ANGLE
+	//float CycleT=0.04f; //不讀feedback時 大約22m
+	float CycleT=0.01f;
+#else
+	float CycleT=0.1f; //有讀feedback時需要 22+17+17=56ms 19+16+16=51ms
+#endif
+
+	//float CycleT=0.040f; //單隻手沒接的不讀取
+	//float CycleT=0.03f; //不讀feedback時 大約22m 不過cycle time設大一點不會有在末點over load情況，cycltime比實際大，表示會在到達前下新命令
+
+	float Itv=0; //interval of the segment
+	float t=0; //t of each segment (0~interval)
+	int GripperAlreadyAct=0;// already send command to gripper
+	
+
+	//==variable for reocrd file==//
+	//open file
+#ifdef	RECORD_JOINT_ANGLE
+	fstream fileR;
+	fstream fileL;
+	fileR.open("D://GetDrinkJointAngle_R.csv",ios::out|ios::trunc);
+	fileL.open("D://GetDrinkJointAngle_L.csv",ios::out|ios::trunc);
+#endif
+
+#ifdef CHECK_CARTESIAN_PATH
+	fstream fileR;
+	fstream fileL;
+	fileR.open("D://GetSewCartesian_R.csv",ios::out|ios::trunc);
+	fileL.open("D://GetSewCartesian_L.csv",ios::out|ios::trunc);
+
+#endif
+
+#ifdef	CHECK_JOINT_PATH
+	gfileR.open("D://IK_CMD_R.csv",ios::out|ios::trunc);
+	gfileL.open("D://IK_CMD_L.csv",ios::out|ios::trunc);
+#endif
+	
+	
+	//==record para==//
+	float pos_deg_R[MAX_AXIS_NUM]={0};
+	float pos_deg_L[MAX_AXIS_NUM]={0};
+	float pos_deg_last_ok_R[MAX_AXIS_NUM]={0};
+	float pos_deg_last_ok_L[MAX_AXIS_NUM]={0};
+	int n=0;
+	int rt=0;
+	char buffer[100];
+	//==Robotic arm pose==//
+	float Pend_R[3]={0,0,0};
+	float pose_deg_R[3]={70,-90,0};
+	float Rednt_alpha_R=-90;
+	float vel_deg_R=10;
+
+	float Pend_L[3]={0,0,0};
+	float pose_deg_L[3]={-60,90,0};
+	float Rednt_alpha_L=90;
+	float vel_deg_L=5;
+
+	//==move to initial point==//
+#ifdef	MOVE_TO_INITIAL_POINT
+	//MoveToPoint_Dual(R_p[0],pose_deg_R,Rednt_alpha_R,vel_deg_R,L_p[0],pose_deg_L,Rednt_alpha_L,vel_deg_L);  //20ms
+	MoveToPoint(DEF_RIGHT_HAND,R_p[0],pose_deg_R,Rednt_alpha_R,vel_deg_R);
+	MoveToPoint(DEF_LEFT_HAND,L_p[0],pose_deg_L,Rednt_alpha_L,vel_deg_L);
+	printf("move to p0..\n");
+	WaitMotionDoneDual();
+	
+#endif
+
+#ifdef	DEF_WAIT_ENTER
+	printf("In initial point. press any key to continue...\n");
+	getchar();
+#endif
+	//==Sewing process start ==//
+	float abst=0.0;
+	for(abst=0.0;abst<(TotalTime+CycleT);abst+=CycleT)
+	{
+		if(abst<=Seqt[S_RL_HOLD_1])//左右手夾緊
+		{
+			Itv=SeqItv[S_RL_HOLD_1];
+			t=abst-Seqt[S_INITIAL];
+
+			if(GripperAlreadyAct==0)
+			{
+				printf("press any key to continue...\n");
+#ifdef	DEF_WAIT_ENTER
+				getchar();
+#endif
+#ifdef GRIPPER_ON_LATTE
+				Gripper_LattePanda_Hold(DEF_RIGHT_HAND,true,1200);
+#endif
+				GripperAlreadyAct=1; 
+			}	
+
+			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
+			{
+				Pend_R[f]=R_p[S_INITIAL][f]; 
+				Pend_L[f]=L_p[S_INITIAL][f]; 
+			}
+		}
+		else if(abst<=Seqt[S_RL_F_200])//右手往前200 %左手往前200
+		{	
+			GripperAlreadyAct=0; //clear the gripper status of last segemnt
+
+			Itv=SeqItv[S_RL_F_200];
+			t=abst-Seqt[S_RL_HOLD_1];
+
+			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
+			{
+				Pend_R[f]=R_p[S_RL_HOLD_1][f]+(R_p[S_R_REL_1][f]-R_p[S_RL_HOLD_1][f])*t/Itv; 
+				Pend_L[f]=L_p[S_RL_HOLD_1][f]+(L_p[S_R_REL_1][f]-L_p[S_RL_HOLD_1][f])*t/Itv;
+			}
+		}
+		else if(abst<=Seqt[S_R_REL_1])//右手鬆開1
+		{		
+			Itv=SeqItv[S_R_REL_1];
+			t=abst-Seqt[S_RL_F_200];
+
+			if(GripperAlreadyAct==0)
+			{
+				printf("press any key to continue...\n");
+#ifdef	DEF_WAIT_ENTER
+				getchar();
+#endif
+#ifdef GRIPPER_ON_LATTE
+				Gripper_LattePanda_Hold(DEF_RIGHT_HAND,false,1200);
+#endif
+				GripperAlreadyAct=1; 
+			}	
+
+			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
+			{
+				Pend_R[f]=R_p[S_R_REL_1][f]; 
+				Pend_L[f]=L_p[S_R_REL_1][f]; 
+			}
+		}
+		else if(abst<=Seqt[S_R_X_B_200_S1])//右手x往後退200 %左手不動
+		{
+			GripperAlreadyAct=0;
+
+			Itv=SeqItv[S_R_X_B_200_S1];
+			t=abst-Seqt[S_R_REL_1];
+
+			for(int f=0;f<3;f++)   
+			{
+				Pend_R[f]=R_p[S_R_REL_1][f]+(R_p[S_R_X_B_200_S1][f]-R_p[S_R_REL_1][f])*t/Itv; 
+				Pend_L[f]=L_p[S_R_REL_1][f]; 
+			}		
+		}
+		else if(abst<=Seqt[S_R_HOLD_1])//右手夾緊1
+		{
+			Itv=SeqItv[S_R_HOLD_1];
+			t=abst-Seqt[S_R_X_B_200_S1];
+
+			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
+			{
+				Pend_R[f]=R_p[S_R_X_B_200_S1][f]; 
+				Pend_L[f]=L_p[S_R_X_B_200_S1][f]; 
+			}
+		}
+		else if(abst<=Seqt[S_R_X_CIRF_200_L_X_CIRB_200])//右手x 圓周往前200 %左手x圓周往後200
+		{
+			Itv=SeqItv[S_R_X_CIRF_200_L_X_CIRB_200];
+			t=abst-Seqt[S_R_HOLD_1];
+
+			float Cen_Path_R[3]={(500+300)*0.5,-10,0};
+			float rR = 500-Cen_Path_R[DEF_X];
+
+			float Cen_Path_L[3]={(500+300)*0.5,90,0};
+			float rL = 500-Cen_Path_L[DEF_X];
+
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[DEF_X]=Cen_Path_R[DEF_X]+rR*(cos(DEF_PI*t/Itv + DEF_PI)); 
+				Pend_R[DEF_Y]=Cen_Path_R[DEF_Y]+rR*(sin(DEF_PI*t/Itv + DEF_PI)); 
+				Pend_R[DEF_Z]=Cen_Path_R[DEF_Z];
+
+				Pend_L[DEF_X]=Cen_Path_L[DEF_X]+rL*(cos(DEF_PI*t/Itv)); 
+				Pend_L[DEF_Y]=Cen_Path_L[DEF_Y]+rL*(sin(DEF_PI*t/Itv)); 
+				Pend_L[DEF_Z]=Cen_Path_L[DEF_Z];
+			}		
+		}
+		else if(abst<=Seqt[S_R_REL_2])//右手鬆開2
+		{
+			Itv=SeqItv[S_R_REL_2];
+			t=abst-Seqt[S_R_X_CIRF_200_L_X_CIRB_200];
+			
+			if(GripperAlreadyAct==0)
+			{
+				printf("press any key to continue...\n");
+#ifdef	DEF_WAIT_ENTER
+				getchar();
+#endif
+#ifdef GRIPPER_ON_LATTE
+				Gripper_LattePanda_Hold(DEF_RIGHT_HAND,false,1200);
+#endif
+				GripperAlreadyAct=1; 
+			}	
+
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=R_p[S_R_X_CIRF_200_L_X_CIRB_200][f];							
+				Pend_L[f]=L_p[S_R_X_CIRF_200_L_X_CIRB_200][f];
+			}	
+		}
+		else if(abst<=Seqt[S_R_X_B_200_S2])//右手x往後200 %左手不動
+		{
+			GripperAlreadyAct=0;
+
+			Itv=SeqItv[S_R_X_B_200_S2];
+			t=abst-Seqt[S_R_REL_2];
+
+
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=R_p[S_R_REL_2][f]+(R_p[S_R_X_B_200_S2][f]-R_p[S_R_REL_2][f])*t/Itv;
+				Pend_L[f]=L_p[S_R_REL_2][f]+(L_p[S_R_X_B_200_S2][f]-L_p[S_R_REL_2][f])*t/Itv;
+			}	
+		}
+		else if(abst<=Seqt[S_R_HOLD_2])//%右手夾緊2
+		{
+			Itv=SeqItv[S_R_HOLD_2];
+			t=abst-Seqt[S_R_X_B_200_S2];
+			
+			if(GripperAlreadyAct==0)
+			{
+				printf("press any key to continue...\n");
+#ifdef	DEF_WAIT_ENTER
+				getchar();
+#endif
+#ifdef GRIPPER_ON_LATTE
+				Gripper_LattePanda_Hold(DEF_RIGHT_HAND,true,1200);
+#endif
+				GripperAlreadyAct=1; 
+			}	
+
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=R_p[S_R_X_B_200_S2][f];//右手固定
+				Pend_L[f]=L_p[S_R_X_B_200_S2][f];
+			}	
+		}
+		else if(abst<=Seqt[S_R_X_F_200_L_X_F_200])//%右手x往前200 %左手x往前200
+		{
+			GripperAlreadyAct=1;
+
+			Itv=SeqItv[S_R_X_F_200_L_X_F_200];
+			t=abst-Seqt[S_R_HOLD_2];
+
+			for(int f=0;f<3;f++)  
+			{
+				Pend_R[f]=R_p[S_R_HOLD_2][f]+(R_p[S_R_X_F_200_L_X_F_200][f]-R_p[S_R_HOLD_2][f])*t/Itv;
+				Pend_L[f]=L_p[S_R_HOLD_2][f]+(L_p[S_R_X_F_200_L_X_F_200][f]-L_p[S_R_HOLD_2][f])*t/Itv;
+			}	
+		}
+
+		vel_deg_R=30;
+		vel_deg_L=30;
+
+		//static int cnt=0;//test
+		//cnt++;
+		//if(cnt==1556)
+		//	cnt=cnt;
+
+
+#ifdef MOVETOPOINT_DUAL
+		MoveToPoint_Dual(Pend_R,pose_deg_R,Rednt_alpha_R,vel_deg_R,Pend_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);  //20ms
+#endif
+		printf("Pend_R=[%4.1f,%4.1f,%4.1f],Pend_L=[%4.1f,%4.1f,%4.1f]\n",Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z],Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
+
+		//==確認軌跡點==//
+#ifdef CHECK_CARTESIAN_PATH
+		n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f\n",abst,Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z]);
+		fileR.write(buffer,n);
+
+		n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f\n",abst,Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
+		fileL.write(buffer,n);
+#endif 
+
+#ifdef RECORD_JOINT_ANGLE
+		////==Read right hand
+		rt=Read_pos(DEF_RIGHT_HAND,pos_deg_R,DEF_UNIT_DEG);
+
+		if(rt==0)
+		{
+			//for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+			//{
+			//	printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_R[i]);
+			//}
+			printf("\n");
+
+			
+			n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",abst,pos_deg_R[Index_AXIS1],pos_deg_R[Index_AXIS2],pos_deg_R[Index_AXIS3],pos_deg_R[Index_AXIS4],pos_deg_R[Index_AXIS5],pos_deg_R[Index_AXIS6],pos_deg_R[Index_AXIS7]);
+			fileR.write(buffer,n);
+			
+			memcpy(pos_deg_last_ok_R,pos_deg_R,sizeof(pos_deg_last_ok_R));
+		}
+		else //讀取失敗時，拿前一筆來補
+		{
+			//for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+			//{
+			//	printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_last_ok_R[i]);
+			//}
+			printf("\n");
+
+			n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",abst,pos_deg_last_ok_R[Index_AXIS1],pos_deg_last_ok_R[Index_AXIS2],pos_deg_last_ok_R[Index_AXIS3],pos_deg_last_ok_R[Index_AXIS4],pos_deg_last_ok_R[Index_AXIS5],pos_deg_last_ok_R[Index_AXIS6],pos_deg_last_ok_R[Index_AXIS7]);
+			fileR.write(buffer,n);
+		}
+
+		//==Read left hand
+		rt=Read_pos(DEF_LEFT_HAND,pos_deg_L,DEF_UNIT_DEG);
+
+		if(rt==0)
+		{
+			//for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+			//{
+			//	printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_L[i]);
+			//}
+			printf("\n");
+
+			n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",abst,pos_deg_L[Index_AXIS1],pos_deg_L[Index_AXIS2],pos_deg_L[Index_AXIS3],pos_deg_L[Index_AXIS4],pos_deg_L[Index_AXIS5],pos_deg_L[Index_AXIS6],pos_deg_L[Index_AXIS7]);
+			fileL.write(buffer,n);
+			
+			memcpy(pos_deg_last_ok_L,pos_deg_L,sizeof(pos_deg_last_ok_L));
+		}
+		else //讀取失敗時，拿前一筆來補
+		{
+			//for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+			//{
+			//	printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_last_ok_L[i]);
+			//}
+			printf("\n");
+
+			n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",abst,pos_deg_last_ok_L[Index_AXIS1],pos_deg_last_ok_L[Index_AXIS2],pos_deg_last_ok_L[Index_AXIS3],pos_deg_last_ok_L[Index_AXIS4],pos_deg_last_ok_L[Index_AXIS5],pos_deg_last_ok_L[Index_AXIS6],pos_deg_last_ok_L[Index_AXIS7]);
+			fileL.write(buffer,n);
+		}
+#endif
+	}	
+
+#if	defined(RECORD_JOINT_ANGLE) || defined(CHECK_CARTESIAN_PATH) 
+	fileR.close();
+	fileL.close();
+#endif
+	
+#ifdef	CHECK_JOINT_PATH
+	gfileR.close();
+	gfileL.close();
+#endif
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	
 	//=================//
 	//===initial DXL===//
 	//=================//
-	int rt=DXL_Initial_x86();
-	if(rt==0)
-	{
-		printf("DXL_Initial_x86 failed\n");
-		getchar();
-		return 0;
-	}
+	//int rt=DXL_Initial_x86();
+	//if(rt==0)
+	//{
+	//	printf("DXL_Initial_x86 failed\n");
+	//	getchar();
+	//	return 0;
+	//}
 
 
 
@@ -1618,14 +2043,19 @@ int _tmain(int argc, _TCHAR* argv[])
 	//================//
 	//==TestGetDrink==//
 	//================//
-	PID_Setting_Dual();
-	printf("TestGetDrink...\n");
-	TestGetDrink();
-	printf("Enter any key to go home...\n");
-	getchar();
-	printf("MoveToHome...\n");
-	TestMoveToHome_Dual();
-	
+	//PID_Setting_Dual();
+	//printf("TestGetDrink...\n");
+	//TestGetDrink();
+	//printf("Enter any key to go home...\n");
+	//getchar();
+	//printf("MoveToHome...\n");
+	//TestMoveToHome_Dual();
+
+	//================//
+	//==TestSewing==//
+	//================//
+	TestSewingAction();
+
 
 	//Test Move And Catch
 	//TestMoveAndCatch();

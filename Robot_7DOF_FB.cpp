@@ -974,10 +974,18 @@ int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const fl
 	Vn_nuf_nyrot12=MatrixMath::cross(Vn_u_f,V_n_yrot12);
 	Vn_nuf_nyrot12=Vn_nuf_nyrot12*(1/norm(Vn_nuf_nyrot12));
 	tempfloat=MatrixMath::dot(V_n_yrot12,Vn_u_f)*(1/norm(V_n_yrot12))*(1/norm(Vn_u_f));// temp=V_n_yrot12'*Vn_u_f/norm(V_n_yrot12)/norm(Vn_u_f); 
-
+	
+	//防止在acos(1.000000.....)的時候會出現虛部的情況
+	if (abs(tempfloat-1) < DEF_COSVAL_VERY_SMALL)
+    {   
+		if (tempfloat >0)
+			tempfloat=1;
+		else
+			tempfloat=-1;
+	}
 
 	//Vn_u_f 和 V_n_yrot12的法向量   與 V_ru_l1同方向 theta(3)需要加負號
-	if ( norm(Vn_nuf_nyrot12 - V_ru_l1*(1/norm(V_ru_l1))) < DEF_VERY_SMALL )
+	if ( norm(Vn_nuf_nyrot12 - V_ru_l1*(1/norm(V_ru_l1))) < DEF_NORM_VERY_SMALL )
 		theta[Index_AXIS3]=-acos(tempfloat);
 	else
 		theta[Index_AXIS3]=acos(tempfloat);
@@ -1003,7 +1011,7 @@ int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const fl
 	//V_n_rfl4 及V_n_rf形成的平面 的法向量
 	//防止在acos(1.000000.....)的時候會出現虛部的情況
 	tempfloat=MatrixMath::dot(V_rf_l4,V_wst_to_projend_rfl4_nuf)*(1/norm(V_rf_l4))*(1/norm(V_wst_to_projend_rfl4_nuf));//temp=V_rf_l4'*V_wst_to_projend_rfl4_nuf/norm(V_rf_l4)/norm(V_wst_to_projend_rfl4_nuf);
-	if (abs(tempfloat-1) < DEF_VERY_SMALL) 
+	if (abs(tempfloat-1) < DEF_COSVAL_VERY_SMALL) 
 	{
 		if (tempfloat >0)
 			tempfloat=1;
@@ -1016,7 +1024,7 @@ int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const fl
 	Vn_rfl4_WstToProjEndRfl4Nuf=Vn_rfl4_WstToProjEndRfl4Nuf*(1/norm(Vn_rfl4_WstToProjEndRfl4Nuf));
  
 	//平面法向量 和 Vn_rfl4_nuf  同邊要加負號  判斷theta5要往上或往下轉
-	if (norm(Vn_rfl4_WstToProjEndRfl4Nuf - Vn_rfl4_nuf) < DEF_VERY_SMALL)
+	if (norm(Vn_rfl4_WstToProjEndRfl4Nuf - Vn_rfl4_nuf) < DEF_NORM_VERY_SMALL)
         theta[Index_AXIS5]=-acos(tempfloat); 
     else
         theta[Index_AXIS5]=acos(tempfloat); 
@@ -1038,7 +1046,7 @@ int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const fl
 	//利用法向量方向 判斷theta6旋轉方向
 	tempfloat=MatrixMath::dot(V_wst_to_projend_rfl4_nuf,V_wst_to_end)*(1/norm(V_wst_to_projend_rfl4_nuf)*(1/norm(V_wst_to_end))); //temp=V_wst_to_projend_rfl4_nuf'*V_wst_to_end/norm(V_wst_to_projend_rfl4_nuf)/norm(V_wst_to_end);
 
-	if (norm(Vn_WstToEnd_WstToProjEndRfl4Nuf - Vn_nuf_rotx5_along_NRfl4Nuf) < DEF_VERY_SMALL)
+	if (norm(Vn_WstToEnd_WstToProjEndRfl4Nuf - Vn_nuf_rotx5_along_NRfl4Nuf) < DEF_NORM_VERY_SMALL)
         theta[Index_AXIS6]=-acos(tempfloat); 
     else
         theta[Index_AXIS6]=acos(tempfloat); 
@@ -1062,14 +1070,21 @@ int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const fl
 	Vn_xrot1to6_VHhatz=Vn_xrot1to6_VHhatz*(1/norm(Vn_xrot1to6_VHhatz));
 
 	//V_shx經過123456軸旋轉後和末點座標系的Z軸還差幾度
-	theta[Index_AXIS7]=acos(MatrixMath::dot(V_x_rot1to6,V_H_hat_z)*(1/norm(V_x_rot1to6))*(1/norm(V_H_hat_z)));// theta(7)=acos(V_x_rot1to6'*V_H_hat_z/norm(V_x_rot1to6)/norm(V_H_hat_z));
+	tempfloat=MatrixMath::dot(V_x_rot1to6,V_H_hat_z)*(1/norm(V_x_rot1to6))*(1/norm(V_H_hat_z));// theta(7)=acos(V_x_rot1to6'*V_H_hat_z/norm(V_x_rot1to6)/norm(V_H_hat_z));
+	if (abs(tempfloat-1) < DEF_COSVAL_VERY_SMALL)
+    {   
+		if (tempfloat >0)
+			tempfloat=1;
+		else
+			tempfloat=-1;
+	}
 
-	if (norm(Vn_xrot1to6_VHhatz - V_H_hat_x) <  DEF_VERY_SMALL)
-        theta[Index_AXIS7]=theta[Index_AXIS7];
+	if (norm(Vn_xrot1to6_VHhatz - V_H_hat_x) <  DEF_NORM_VERY_SMALL)
+        theta[Index_AXIS7]=acos(tempfloat);
     else
-        theta[Index_AXIS7]=-theta[Index_AXIS7];  
-
-
+        theta[Index_AXIS7]=-acos(tempfloat);  
+	
+	
 	// ==左右手第1軸方向相反== //
     if (RLHand == DEF_LEFT_HAND) //左手和右手第一軸方向相反
         theta[Index_AXIS1]=-theta[Index_AXIS1];
@@ -1174,7 +1189,12 @@ int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_de
 	return 0;
 }
 
-
+//#define CHECK_JOINT_PATH
+#ifdef	CHECK_JOINT_PATH
+#include<fstream>
+extern fstream gfileR;
+extern fstream gfileL;
+#endif
 int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R,float vel_deg_R,float Pend_L[3],float Pose_deg_L[3],float Rednt_alpha_deg_L,float vel_deg_L)
 {
 	const float linkL[6]={L0,L1,L2,L3,L4,L5};
@@ -1197,6 +1217,13 @@ int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R
 
 	//inverse kinematics right hand
 	rt= IK_7DOF_FB7roll(DEF_RIGHT_HAND,linkL,base_R,Pend_R,Pose_rad_R,Rednt_alpha_rad_R,theta_R);
+
+	//確認joint 使用
+#ifdef CHECK_JOINT_PATH
+	char buffer[100];
+	int n=sprintf_s(buffer,sizeof(buffer),"%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",theta_R[Index_AXIS1]*DEF_RATIO_RAD_TO_DEG,theta_R[Index_AXIS2]*DEF_RATIO_RAD_TO_DEG,theta_R[Index_AXIS3]*DEF_RATIO_RAD_TO_DEG,theta_R[Index_AXIS4]*DEF_RATIO_RAD_TO_DEG,theta_R[Index_AXIS5]*DEF_RATIO_RAD_TO_DEG,theta_R[Index_AXIS6]*DEF_RATIO_RAD_TO_DEG,theta_R[Index_AXIS7]*DEF_RATIO_RAD_TO_DEG);
+	gfileR.write(buffer,n);
+#endif
 	//for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
 	//{
 	//	DBGMSG(("R%d:%3.0f, ",gMapAxisNO[i],theta_R[i]*DEF_RATIO_RAD_TO_DEG))
@@ -1214,11 +1241,20 @@ int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R
 
 	//inverse kinematics left hand
 	rt= IK_7DOF_FB7roll(DEF_LEFT_HAND,linkL,base_L,Pend_L,Pose_rad_L,Rednt_alpha_rad_L,theta_L);
+	
+	//確認joint 使用
+#ifdef CHECK_JOINT_PATH
+	 buffer[100];
+	 n=sprintf_s(buffer,sizeof(buffer),"%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",theta_L[Index_AXIS1]*DEF_RATIO_RAD_TO_DEG,theta_L[Index_AXIS2]*DEF_RATIO_RAD_TO_DEG,theta_L[Index_AXIS3]*DEF_RATIO_RAD_TO_DEG,theta_L[Index_AXIS4]*DEF_RATIO_RAD_TO_DEG,theta_L[Index_AXIS5]*DEF_RATIO_RAD_TO_DEG,theta_L[Index_AXIS6]*DEF_RATIO_RAD_TO_DEG,theta_L[Index_AXIS7]*DEF_RATIO_RAD_TO_DEG);
+	 gfileL.write(buffer,n);
+#endif
+
 	//for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
 	//{
 	//	DBGMSG(("L%d:%3.0f, ",gMapAxisNO[i],theta_L[i]*DEF_RATIO_RAD_TO_DEG))
 	//}
 	//DBGMSG(("\n"))
+
 	
 	//==prevent angle over constrain left hand 
 	over_index=0;
@@ -1356,7 +1392,8 @@ int setPosition_x86(int ServoID, int Position, int Speed)//stanley
 int DXL_Initial_x86()
 {
 	int rt=0;
-	const int default_portnum=5;
+	//const int default_portnum=6;//latte_panda
+	const int default_portnum=5;//my pc
 	const int default_baudnum=1;
 
 	printf("DXL_port=%d\n",default_portnum);
@@ -1515,7 +1552,7 @@ void Gripper_LattePanda_Close()
 	 GlobalObjects::Close();
 }
 
-int Gripper_LattePanda_Hold(int RLHand,bool Hold)
+int Gripper_LattePanda_Hold(int RLHand,bool Hold,int delay_ms)
 {
 	//=========
 	//=Test LED
@@ -1528,8 +1565,6 @@ int Gripper_LattePanda_Hold(int RLHand,bool Hold)
     //    GlobalObjects::arduino->digitalWrite(DEF_LATTE_D13_LED, GlobalObjects::arduino->LOW);//set the LED　off  
     //    Sleep(500);//delay a seconds  
     //}
-
-	int delay=500;
 
 	if(RLHand==DEF_RIGHT_HAND)
 	{
@@ -1544,8 +1579,8 @@ int Gripper_LattePanda_Hold(int RLHand,bool Hold)
 			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D2_GRIPPER_R2, GlobalObjects::arduino->HIGH);
 		}
 
-		Sleep(delay);
-
+		QPDelay_ms(delay_ms);
+	
 		GlobalObjects::arduino->digitalWrite(DEF_LATTE_D1_GRIPPER_R1, GlobalObjects::arduino->LOW);
 		GlobalObjects::arduino->digitalWrite(DEF_LATTE_D2_GRIPPER_R2, GlobalObjects::arduino->LOW);
 
@@ -1563,7 +1598,7 @@ int Gripper_LattePanda_Hold(int RLHand,bool Hold)
 			GlobalObjects::arduino->digitalWrite(DEF_LATTE_D5_GRIPPER_L2, GlobalObjects::arduino->HIGH);
 		}
 
-		Sleep(delay);
+		QPDelay_ms(delay_ms);
 
 		GlobalObjects::arduino->digitalWrite(DEF_LATTE_D4_GRIPPER_L1, GlobalObjects::arduino->LOW);
 		GlobalObjects::arduino->digitalWrite(DEF_LATTE_D5_GRIPPER_L2, GlobalObjects::arduino->LOW);
