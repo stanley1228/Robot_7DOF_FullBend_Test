@@ -9,16 +9,17 @@
 #include <math.h>
 //#include <iostream>
 #include <windows.h> //sleep使用
+#include<fstream>
 using namespace std;
 
 
 #define DEF_DESCRETE_POINT 1000
 
 
-#define CHECK_CARTESIAN_PATH 
+//#define CHECK_CARTESIAN_PATH 
 //#define GRIPPER_ON_LATTE
-//#define MOVETOPOINT_DUAL
-//#define CHECK_JOINT_PATH   //MoveToPoint_Dual函式 那邊也要def
+#define MOVETOPOINT_DUAL
+#define CHECK_JOINT_PATH   //MoveToPoint_Dual函式 那邊也要def
 //#define MOVE_TO_INITIAL_POINT
 //#define RECORD_JOINT_ANGLE
 #define DEF_WAIT_ENTER
@@ -354,7 +355,7 @@ void TestGripperLattePanda()
 }
 
 
-#include<fstream>
+
 void Record_LineMove_LeftHand()
 {
 	//==Move to 以左肩座標系的P1_L[500,-L0,0]
@@ -1636,11 +1637,11 @@ void TestSewingAction()
 	SeqItv[S_RL_HOLD_1]=2;
 	SeqItv[S_RL_F_200]=10;
 	SeqItv[S_R_REL_1]=2;
-	SeqItv[S_R_X_B_200_S1]=10;
+	SeqItv[S_R_X_B_200_S1]=5;
 	SeqItv[S_R_HOLD_1]=2;
 	SeqItv[S_R_X_CIRF_200_L_X_CIRB_200]=10;
 	SeqItv[S_R_REL_2]=2;
-	SeqItv[S_R_X_B_200_S2]=10;
+	SeqItv[S_R_X_B_200_S2]=5;
 	SeqItv[S_R_HOLD_2]=2;
 	SeqItv[S_R_X_F_200_L_X_F_200]=10;
 
