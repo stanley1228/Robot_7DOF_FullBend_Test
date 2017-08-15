@@ -17,10 +17,10 @@ using namespace std;
 
 
 //#define CHECK_CARTESIAN_PATH 
-//#define GRIPPER_ON_LATTE
+#define GRIPPER_ON_LATTE
 #define MOVETOPOINT_DUAL
-#define CHECK_JOINT_PATH   //MoveToPoint_Dual函式 那邊也要def
-//#define MOVE_TO_INITIAL_POINT
+//#define CHECK_JOINT_PATH   //MoveToPoint_Dual函式 那邊也要def
+#define MOVE_TO_INITIAL_POINT
 //#define RECORD_JOINT_ANGLE
 #define DEF_WAIT_ENTER
 #ifdef  CHECK_JOINT_PATH
@@ -353,6 +353,26 @@ void TestGripperLattePanda()
 		}
 	}
 }
+
+void ReleaseGripperLattePanda()
+{
+	char c='a';
+	int delay_ms=500;
+	while(1)
+	{
+		Gripper_LattePanda_Hold(DEF_RIGHT_HAND,false,delay_ms);
+		getchar();
+
+		Gripper_LattePanda_Hold(DEF_LEFT_HAND,false,delay_ms);
+		c=getchar();
+
+		if(c=='c')
+		{
+			break;
+		}
+	}
+}
+
 
 
 
@@ -1629,6 +1649,12 @@ void TestSewingAction()
 		{300, 90, 0},	//右手x往後200 %左手不動
 		{300, 90, 0},	//右手夾緊2
 		{500, 90, 0}};	//右手x往前200 %左手x往前200
+
+	float Cen_Path_R[3]={(500+300)*0.5,-10,0};
+	float rR = 500-Cen_Path_R[DEF_X];
+
+	float Cen_Path_L[3]={(500+300)*0.5,90,0};
+	float rL = 500-Cen_Path_L[DEF_X];
 		
 	//==各段花費時間==//
 	float SeqItv[SegSize]={0};//Sequence  invterval
@@ -1637,11 +1663,11 @@ void TestSewingAction()
 	SeqItv[S_RL_HOLD_1]=2;
 	SeqItv[S_RL_F_200]=10;
 	SeqItv[S_R_REL_1]=2;
-	SeqItv[S_R_X_B_200_S1]=5;
+	SeqItv[S_R_X_B_200_S1]=10;
 	SeqItv[S_R_HOLD_1]=2;
 	SeqItv[S_R_X_CIRF_200_L_X_CIRB_200]=10;
 	SeqItv[S_R_REL_2]=2;
-	SeqItv[S_R_X_B_200_S2]=5;
+	SeqItv[S_R_X_B_200_S2]=10;
 	SeqItv[S_R_HOLD_2]=2;
 	SeqItv[S_R_X_F_200_L_X_F_200]=10;
 
@@ -1661,8 +1687,8 @@ void TestSewingAction()
 	//==流程需用變數
 	//float CycleT=0.1f;
 #ifndef RECORD_JOINT_ANGLE
-	//float CycleT=0.04f; //不讀feedback時 大約22m
-	float CycleT=0.01f;
+	float CycleT=0.04f; //不讀feedback時 大約22m
+	//float CycleT=0.01f;
 #else
 	float CycleT=0.1f; //有讀feedback時需要 22+17+17=56ms 19+16+16=51ms
 #endif
@@ -1715,7 +1741,7 @@ void TestSewingAction()
 	float Pend_L[3]={0,0,0};
 	float pose_deg_L[3]={-60,90,0};
 	float Rednt_alpha_L=90;
-	float vel_deg_L=5;
+	float vel_deg_L=10;
 
 	//==move to initial point==//
 #ifdef	MOVE_TO_INITIAL_POINT
@@ -1748,6 +1774,7 @@ void TestSewingAction()
 #endif
 #ifdef GRIPPER_ON_LATTE
 				Gripper_LattePanda_Hold(DEF_RIGHT_HAND,true,1200);
+				Gripper_LattePanda_Hold(DEF_LEFT_HAND,true,1200);
 #endif
 				GripperAlreadyAct=1; 
 			}	
@@ -1812,6 +1839,18 @@ void TestSewingAction()
 			Itv=SeqItv[S_R_HOLD_1];
 			t=abst-Seqt[S_R_X_B_200_S1];
 
+			if(GripperAlreadyAct==0)
+			{
+				printf("press any key to continue...\n");
+#ifdef	DEF_WAIT_ENTER
+				getchar();
+#endif
+#ifdef GRIPPER_ON_LATTE
+				Gripper_LattePanda_Hold(DEF_RIGHT_HAND,true,1200);
+#endif
+				GripperAlreadyAct=1; 
+			}	
+
 			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
 			{
 				Pend_R[f]=R_p[S_R_X_B_200_S1][f]; 
@@ -1820,14 +1859,10 @@ void TestSewingAction()
 		}
 		else if(abst<=Seqt[S_R_X_CIRF_200_L_X_CIRB_200])//右手x 圓周往前200 %左手x圓周往後200
 		{
+			GripperAlreadyAct=0;
+
 			Itv=SeqItv[S_R_X_CIRF_200_L_X_CIRB_200];
 			t=abst-Seqt[S_R_HOLD_1];
-
-			float Cen_Path_R[3]={(500+300)*0.5,-10,0};
-			float rR = 500-Cen_Path_R[DEF_X];
-
-			float Cen_Path_L[3]={(500+300)*0.5,90,0};
-			float rL = 500-Cen_Path_L[DEF_X];
 
 			for(int f=0;f<3;f++)  
 			{
@@ -1902,7 +1937,7 @@ void TestSewingAction()
 		}
 		else if(abst<=Seqt[S_R_X_F_200_L_X_F_200])//%右手x往前200 %左手x往前200
 		{
-			GripperAlreadyAct=1;
+			GripperAlreadyAct=0;
 
 			Itv=SeqItv[S_R_X_F_200_L_X_F_200];
 			t=abst-Seqt[S_R_HOLD_2];
@@ -2014,21 +2049,22 @@ int _tmain(int argc, _TCHAR* argv[])
 	//=================//
 	//===initial DXL===//
 	//=================//
-	//int rt=DXL_Initial_x86();
-	//if(rt==0)
-	//{
-	//	printf("DXL_Initial_x86 failed\n");
-	//	getchar();
-	//	return 0;
-	//}
+	int rt=DXL_Initial_x86();
+	if(rt==0)
+	{
+		printf("DXL_Initial_x86 failed\n");
+		getchar();
+		return 0;
+	}
 
 
 
 	//====================//
 	//===initial gripper==//
 	//====================//
-	//printf("Gripper_LattePanda_Initial...\n");
-	//Gripper_LattePanda_Initial();
+	printf("Gripper_LattePanda_Initial...\n");
+	Gripper_LattePanda_Initial();
+
 
 	//====================//
 	//===MoveToSelectPoint==//
@@ -2055,8 +2091,13 @@ int _tmain(int argc, _TCHAR* argv[])
 	//================//
 	//==TestSewing==//
 	//================//
+	PID_Setting_Dual();
+	printf("SewingAction...\n");
 	TestSewingAction();
-
+	printf("Enter any key to go home...\n");
+	getchar();
+	printf("MoveToHome...\n");
+	TestMoveToHome_Dual();
 
 	//Test Move And Catch
 	//TestMoveAndCatch();
@@ -2081,7 +2122,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//Sleep(1500);
 
 	DXL_Terminate_x86();
-	//Gripper_LattePanda_Close();
+	Gripper_LattePanda_Close();
 	
 	return 0;
 }
