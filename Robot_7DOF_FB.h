@@ -4,8 +4,9 @@
 
 #include "Matrix.h"
 #include "modbus.h"
+#include <opencv2/opencv.hpp>
 
-
+using namespace cv;
 
 
 #define DEBUG 1
@@ -188,7 +189,7 @@ enum{
 #define AXISL1_R2M_OFFSET_DEG 180
 #define AXISL2_R2M_OFFSET_DEG 90
 #define AXISL3_R2M_OFFSET_DEG 180
-#define AXISL4_R2M_OFFSET_DEG 90
+#define AXISL4_R2M_OFFSET_DEG 180
 #define AXISL5_R2M_OFFSET_DEG 90
 #define AXISL6_R2M_OFFSET_DEG 180
 #define AXISL7_R2M_OFFSET_DEG 180
@@ -435,7 +436,11 @@ static const float grobot_lim_pus_L_High[MAX_AXIS_NUM]=
 #define Y_BASE 0
 #define Z_BASE 0
 
-#define DEF_VERY_SMALL (1.e-4)//很小的量判斷為0使用
+//===================
+//==IK計算使用
+//====================
+#define DEF_NORM_VERY_SMALL (1.e-3)//norm很小的量判斷為0使用
+#define DEF_COSVAL_VERY_SMALL (1.e-6)//cos值很小的量判斷為0使用
 
 //==========
 //Function
@@ -449,9 +454,11 @@ int Output_to_Dynamixel(int RLHand,const float *Ang_rad,const unsigned short int
 int Output_to_Dynamixel_Dual(const float *Ang_rad_R,const unsigned short int *velocity_R,const float *Ang_rad_L,const unsigned short int *velocity_L);
 int Output_to_Dynamixel_pulse(const unsigned short int *Ang_pulse,const unsigned short int *velocity);
 
-Matrix R_z1x2y3(float alpha,float beta,float gamma);
+//Matrix R_z1x2y3(float alpha,float beta,float gamma);
+Mat R_z1x2y3(float alpha,float beta,float gamma);		
 float norm(const Matrix& v);
 Matrix Rogridues(float theta,const Matrix& V_A);
+Mat Rogridues(float theta,Mat V_A);
 int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_base,const float y_base,const float z_base,const float x_end,const float y_end,const float z_end,const float alpha,const float beta,const float gamma,const float Rednt_alpha,float* theta);
 int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const float Pend[3],const float PoseAngle[3],const float Rednt_alpha,float* out_theta);
 bool AngleOverConstrain(int RLHand,const float theta[MAX_AXIS_NUM],int *OverIndex);
@@ -476,5 +483,5 @@ int GripperHold(int RLHand,bool Hold);
 
 int Gripper_LattePanda_Initial();
 void Gripper_LattePanda_Close();
-int Gripper_LattePanda_Hold(int RLHand,bool Hold);
+int Gripper_LattePanda_Hold(int RLHand,bool Hold,int delay_ms);
 #endif    /* ROBOT_7DOF_FB__H */

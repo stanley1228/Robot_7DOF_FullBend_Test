@@ -1,9 +1,17 @@
 
 
 
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui/highgui.hpp>  //高層GUI
+#include <opencv2/legacy/legacy.hpp>
+
+
 #include "Robot_7DOF_FB.h"
+
 #include <vector>
+
 #include "Matrix.h"
+
 #include "MatrixMath.h"
 
 #define _USE_MATH_DEFINES // for C++
@@ -16,9 +24,19 @@
 #pragma comment(lib,"dynamixel.lib") 
 
 
+#pragma comment(lib,"opencv_core2413d.lib")	//顯示圖片使用
+#pragma comment(lib,"opencv_highgui2413d.lib") 
+#pragma comment(lib,"opencv_imgproc2413d.lib")
+#pragma comment(lib,"opencv_video2413d.lib")
+#pragma comment(lib,"opencv_legacy2413d.lib")
+#pragma comment(lib,"opencv_objdetect2413d.lib")
 
 
 
+
+
+
+using namespace cv;
 using namespace std;
 
 #if (DEBUG)
@@ -644,16 +662,26 @@ int Output_to_Dynamixel_pulse(const unsigned short int *Ang_pulse,const unsigned
 }
 
 //歐拉 Z1X2Y3 Intrinsic Rotaions相對於當前坐標系的的旋轉
-Matrix R_z1x2y3(float alpha,float beta,float gamma)
+//Matrix R_z1x2y3(float alpha,float beta,float gamma)
+//{
+//	Matrix ans(3,3);
+//	ans << cos(alpha)*cos(gamma)-sin(alpha)*sin(beta)*sin(gamma)	<< -cos(beta)*sin(alpha)	<< cos(alpha)*sin(gamma)+cos(gamma)*sin(alpha)*sin(beta)
+//        << cos(gamma)*sin(alpha)+cos(alpha)*sin(beta)*sin(gamma)	<< cos(alpha)*cos(beta)		<< sin(alpha)*sin(gamma)-cos(alpha)*cos(gamma)*sin(beta)
+//        << -cos(beta)*sin(gamma)									<< sin(beta)				<< cos(beta)*cos(gamma);
+//
+//	return ans;
+//
+//}
+
+//使用CV Mat
+Mat R_z1x2y3(float alpha,float beta,float gamma)
 {
-	Matrix ans(3,3);
-	ans << cos(alpha)*cos(gamma)-sin(alpha)*sin(beta)*sin(gamma)	<< -cos(beta)*sin(alpha)	<< cos(alpha)*sin(gamma)+cos(gamma)*sin(alpha)*sin(beta)
-        << cos(gamma)*sin(alpha)+cos(alpha)*sin(beta)*sin(gamma)	<< cos(alpha)*cos(beta)		<< sin(alpha)*sin(gamma)-cos(alpha)*cos(gamma)*sin(beta)
-        << -cos(beta)*sin(gamma)									<< sin(beta)				<< cos(beta)*cos(gamma);
-
+	Mat ans=(Mat_<float>(3,3) <<	cos(alpha)*cos(gamma)-sin(alpha)*sin(beta)*sin(gamma),	-cos(beta)*sin(alpha)	,	cos(alpha)*sin(gamma)+cos(gamma)*sin(alpha)*sin(beta),  //0.06ms
+									cos(gamma)*sin(alpha)+cos(alpha)*sin(beta)*sin(gamma),	cos(alpha)*cos(beta)	,	sin(alpha)*sin(gamma)-cos(alpha)*cos(gamma)*sin(beta),
+									-cos(beta)*sin(gamma),sin(beta),cos(beta)*cos(gamma));
 	return ans;
-
 }
+
 
 float norm(const Matrix& v)
 {
@@ -685,165 +713,213 @@ Matrix Rogridues(float theta,const Matrix& V_A)
     
 	return R_a;
 }
-int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_base,const float y_base,const float z_base,const float x_end,const float y_end,const float z_end,const float alpha,const float beta,const float gamma,const float Rednt_alpha,float* theta)
+//opencv matrix
+Mat Rogridues(float theta,Mat V_A)
 {
-	int i=0;
-	
-	//Out put initial to zero
-	for(i=Index_AXIS1;i<=Index_AXIS7;i++)
-	{
-		theta[i]=0;
-	}
+	float cs = cos( theta );
+    float sn = sin( theta );
 
-	Matrix R(3,3);
-	R=R_z1x2y3(alpha,beta,gamma);
-
-	Matrix V_H_hat_x(3,1);
-	V_H_hat_x=Matrix::ExportCol(R,1);//取出歐拉角轉換的旋轉矩陣，取出第1行為X軸旋轉後向量
-	V_H_hat_x*=1/norm(V_H_hat_x);
-	
-	Matrix V_H_hat_y(3,1);
-	V_H_hat_y=Matrix::ExportCol(R,2);//取出歐拉角轉換的旋轉矩陣，取出第2行為Y軸旋轉後向量
-	V_H_hat_y*=1/norm(V_H_hat_y);
-	
-
-	Matrix V_r_end(3,1);
-	V_r_end	<<x_end-x_base
-			<<y_end-y_base
-			<<z_end-z_base;
-
-
-	Matrix V_r_h(3,1);
-	V_r_h=V_H_hat_x*L3;
-
-	Matrix V_r_wst(3,1);
-	V_r_wst=V_r_end-V_r_h;	
-
-	//theat 4
-	theta[Index_AXIS4]=-(float)(M_PI-acos((pow(l1,2)+pow(l2,2)-pow(norm(V_r_wst),2))/(2*l1*l2)));
-
-
-	Matrix V_r_m(3,1);
-	V_r_m=(pow(l1,2)-pow(l2,2)+pow(norm(V_r_wst),2))/(2*pow(norm(V_r_wst),2))*V_r_wst;
-
-
-
-	//Redundant circle 半徑R
-	float Rednt_cir_R = pow(l1,2)- pow( (pow(l1,2)-pow(l2,2)+pow(norm(V_r_wst),2))/(2*norm(V_r_wst)) , 2);
-	Rednt_cir_R=sqrt(Rednt_cir_R);
-
-
-	//圓中心點到Elbow向量 V_r_u
-	Matrix V_shz(3,1);
-	V_shz	<<0
-			<<0
-			<<1;
-
-	Matrix V_alpha_hat(3,1);//V_alpha_hat=cross(V_r_wst,V_shz)/norm(cross(V_r_wst,V_shz));
-	Matrix temp_cross(3,1);
-	temp_cross=MatrixMath::cross(V_r_wst,V_shz); //錯誤
-	V_alpha_hat=temp_cross*(1/norm(temp_cross));
-
-	Matrix V_beta_hat(3,1);//V_beta_hat=cross(V_r_wst,V_alpha_hat)/norm(cross(V_r_wst,V_alpha_hat));
-	temp_cross=MatrixMath::cross(V_r_wst,V_alpha_hat);
-	V_beta_hat=temp_cross*(1/norm(temp_cross));
-
-
-
-	Matrix temp(4,4);//temp=Rogridues(Rednt_alpha,V_r_wst/norm(V_r_wst)) *[Rednt_cir_R*V_beta_hat;1];  //Rednt_alpha的方向和論文上的方向性相反
-	Matrix V_r_wst_unit =V_r_wst*(1/norm(V_r_wst));
-	Matrix V_temp3x1(3,1);//需要寫一個可以補1的函試
-	Matrix V_temp4x1(4,1);
-	V_temp3x1=V_beta_hat*Rednt_cir_R;
-	V_temp4x1.Vec_ext_1_row(V_temp3x1,1); //3x1 extend to 4x1
-
-	temp=Rogridues(Rednt_alpha,V_r_wst_unit)*V_temp4x1;
-
-
-	Matrix V_R_u(3,1);
-	V_R_u.Vec_export_3_row(temp);
-	
-
-	Matrix V_r_u(3,1);
-	V_r_u=V_r_m+V_R_u;
-
-	theta[Index_AXIS1]=atan2(-V_r_u(1,1),-V_r_u(3,1));//theta(1)=atan2(-V_r_u(1),-V_r_u(3));
-
-
-	if (theta[Index_AXIS1] !=0) 
-		theta[Index_AXIS2]=atan2(V_r_u(2,1),-V_r_u(1,1)/sin(theta[Index_AXIS1]));
-	else
-		theta[Index_AXIS2]=atan2(-V_r_u(2,1),V_r_u(3,1));
+	float* pV_A=V_A.ptr<float>(0);
 	
 
 
-	//theat 3
-	//theta(3)=atan2( sin(theta(2))*sin(theta(1))*V_r_wst(1)+cos(theta(2))*V_r_wst(2)+sin(theta(2))*cos(theta(1))*V_r_wst(3),cos(theta(1))*V_r_wst(1)-sin(theta(1))*V_r_wst(3));
-	theta[Index_AXIS3]=atan2( sin(theta[Index_AXIS2])*sin(theta[Index_AXIS1])*V_r_wst(1,1)+cos(theta[Index_AXIS2])*V_r_wst(2,1)+sin(theta[Index_AXIS2])*cos(theta[Index_AXIS1])*V_r_wst(3,1),cos(theta[Index_AXIS1])*V_r_wst(1,1)-sin(theta[Index_AXIS1])*V_r_wst(3,1));
+	Mat R_a=(Mat_<float>(4,4) <<	cs + pow(pV_A[0],2)*(1-cs)											,	pV_A[0]*pV_A[1]*(1-cs)-pV_A[2]*sn						,	pV_A[0]*pV_A[2]*(1-cs)+pV_A[1]*sn				,	0,
+									pV_A[0]*pV_A[1]*(1-cs)+pV_A[2]*sn									,	cos(theta)+pow(pV_A[1],2)*(1-cs)						,	pV_A[1]*pV_A[2]*(1-cs)-pV_A[0]*sn				,	0,		
+									pV_A[0]*pV_A[2]*(1-cs)-pV_A[1]*sn									,	pV_A[1]*pV_A[2]*(1-cs)+pV_A[0]*sn						,	cs+pow(pV_A[2],2)*(1-cs)						,	0,
+									0																	,	0														,	0												,	1);
 
-
-
-	//theat 5
-	Matrix V_r_f(3,1);
-	V_r_f=V_r_wst-V_r_u;
-
-	Matrix V_Axis6(3,1);
-	V_Axis6=MatrixMath::cross(V_H_hat_y,-V_r_f)*(1/norm(MatrixMath::cross(V_H_hat_y,-V_r_f)));//V_Axis6=cross(V_H_hat_y,-V_r_f)/norm(cross(V_H_hat_y,-V_r_f));
-
-	Matrix V_r_wst_u(3,1);
-	V_r_wst_u=V_r_wst+V_Axis6;
-
-	Matrix A1_4(4,4);
-	A1_4=MatrixMath::RotY(theta[Index_AXIS1])*MatrixMath::RotX(theta[Index_AXIS2])*MatrixMath::RotZ(theta[Index_AXIS3])*MatrixMath::Tz(-l1)*MatrixMath::RotY(theta[Index_AXIS4]);//A1_4=Ry(theta(1))*Rx(theta(2))*Rz(theta(3))*Tz(-L1)*Ry(theta(4));
-	
-
-	Matrix V_temp_f(4,1);
-	Matrix V_r_wst_u_4x1(4,1);
-	V_r_wst_u_4x1.Vec_ext_1_row(V_r_wst_u,1);
-	
-
-	V_temp_f=MatrixMath::Inv(A1_4)*V_r_wst_u_4x1;//V_temp_f=inv(A1_4)*[V_r_wst_u;1]; //(3.31) 這個是補一列1上去的意思,need fix
-	theta[Index_AXIS5]=atan2(V_temp_f(2,1),V_temp_f(1,1));//theta(5)=atan2(V_temp_f(2),V_temp_f(1));
-
-	
-	//theat 6
-	Matrix V_r_wst_r(3,1);
-	V_r_wst_r=V_r_wst+V_H_hat_y;
-
-	Matrix A1_5(4,4);
-	A1_5=A1_4*MatrixMath::RotZ(theta[Index_AXIS5])*MatrixMath::Tz(-l2);//A1_5=A1_4*Rz(theta(5))*Tz(-L2);
-	
-	Matrix V_temp_g(4,4);
-	Matrix V_r_wst_r_4x1(4,1);
-	V_r_wst_r_4x1.Vec_ext_1_row(V_r_wst_r,1);
-	
-	V_temp_g=MatrixMath::Inv(A1_5)*V_r_wst_r_4x1; //V_temp_g=inv(A1_5)*[V_r_wst_r;1]; //(3.38)  這個是補一列1上去的意思,need fix
-	
-	theta[Index_AXIS6]=atan2(V_temp_g(3,1),V_temp_g(2,1));
-
-
-	//theat 7
-	Matrix V_r_wst_f(3,1);
-	V_r_wst_f=V_r_wst+V_H_hat_x;
-
-	Matrix A1_6(4,4);
-	A1_6=A1_5*MatrixMath::RotX(theta[Index_AXIS6]);
-
-	Matrix V_temp_h(3,1);
-	Matrix V_r_wst_f_4x1(4,1);
-	V_r_wst_f_4x1.Vec_ext_1_row(V_r_wst_f,1);
-	
-	V_temp_h=MatrixMath::Inv(A1_6)*V_r_wst_f_4x1; //V_temp_h=inv(A1_6)*[V_r_wst_f;1]; 
-	
-	theta[Index_AXIS7]=atan2(-V_temp_h(1,1),-V_temp_h(3,1));//theta(7)=atan2(-V_temp_h(1),-V_temp_h(3));
-
-
-	return 0;
+	return R_a;
 }
+
+
+Mat RotX( float radians )
+{
+    float cs = cos( radians );
+    float sn = sin( radians );
+
+    Mat rotate=(Mat_<float>(4,4) << 1 , 0  ,  0  , 0,
+									0 , cs , -sn , 0,
+									0 , sn ,  cs , 0,
+									0 , 0  ,  0  , 1);
+
+    return rotate;
+
+}
+
+Mat RotY( float radians )
+{
+    float cs = cos( radians );
+    float sn = sin( radians );
+
+    Mat rotate=(Mat_<float>(4,4) <<	cs		, 0   ,  sn  , 0,
+									0		, 1   ,  0   , 0,
+									-sn		, 0   ,  cs  , 0,
+									0		, 0   ,  0   , 1);
+
+    return rotate;
+}
+
+
+//int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_base,const float y_base,const float z_base,const float x_end,const float y_end,const float z_end,const float alpha,const float beta,const float gamma,const float Rednt_alpha,float* theta)
+//{
+//	int i=0;
+//	
+//	//Out put initial to zero
+//	for(i=Index_AXIS1;i<=Index_AXIS7;i++)
+//	{
+//		theta[i]=0;
+//	}
+//
+//	Matrix R(3,3);
+//	R=R_z1x2y3(alpha,beta,gamma);
+//
+//	Matrix V_H_hat_x(3,1);
+//	V_H_hat_x=Matrix::ExportCol(R,1);//取出歐拉角轉換的旋轉矩陣，取出第1行為X軸旋轉後向量
+//	V_H_hat_x*=1/norm(V_H_hat_x);
+//	
+//	Matrix V_H_hat_y(3,1);
+//	V_H_hat_y=Matrix::ExportCol(R,2);//取出歐拉角轉換的旋轉矩陣，取出第2行為Y軸旋轉後向量
+//	V_H_hat_y*=1/norm(V_H_hat_y);
+//	
+//
+//	Matrix V_r_end(3,1);
+//	V_r_end	<<x_end-x_base
+//			<<y_end-y_base
+//			<<z_end-z_base;
+//
+//
+//	Matrix V_r_h(3,1);
+//	V_r_h=V_H_hat_x*L3;
+//
+//	Matrix V_r_wst(3,1);
+//	V_r_wst=V_r_end-V_r_h;	
+//
+//	//theat 4
+//	theta[Index_AXIS4]=-(float)(M_PI-acos((pow(l1,2)+pow(l2,2)-pow(norm(V_r_wst),2))/(2*l1*l2)));
+//
+//
+//	Matrix V_r_m(3,1);
+//	V_r_m=(pow(l1,2)-pow(l2,2)+pow(norm(V_r_wst),2))/(2*pow(norm(V_r_wst),2))*V_r_wst;
+//
+//
+//
+//	//Redundant circle 半徑R
+//	float Rednt_cir_R = pow(l1,2)- pow( (pow(l1,2)-pow(l2,2)+pow(norm(V_r_wst),2))/(2*norm(V_r_wst)) , 2);
+//	Rednt_cir_R=sqrt(Rednt_cir_R);
+//
+//
+//	//圓中心點到Elbow向量 V_r_u
+//	Matrix V_shz(3,1);
+//	V_shz	<<0
+//			<<0
+//			<<1;
+//
+//	Matrix V_alpha_hat(3,1);//V_alpha_hat=cross(V_r_wst,V_shz)/norm(cross(V_r_wst,V_shz));
+//	Matrix temp_cross(3,1);
+//	temp_cross=MatrixMath::cross(V_r_wst,V_shz); //錯誤
+//	V_alpha_hat=temp_cross*(1/norm(temp_cross));
+//
+//	Matrix V_beta_hat(3,1);//V_beta_hat=cross(V_r_wst,V_alpha_hat)/norm(cross(V_r_wst,V_alpha_hat));
+//	temp_cross=MatrixMath::cross(V_r_wst,V_alpha_hat);
+//	V_beta_hat=temp_cross*(1/norm(temp_cross));
+//
+//
+//
+//	Matrix temp(4,4);//temp=Rogridues(Rednt_alpha,V_r_wst/norm(V_r_wst)) *[Rednt_cir_R*V_beta_hat;1];  //Rednt_alpha的方向和論文上的方向性相反
+//	Matrix V_r_wst_unit =V_r_wst*(1/norm(V_r_wst));
+//	Matrix V_temp3x1(3,1);//需要寫一個可以補1的函試
+//	Matrix V_temp4x1(4,1);
+//	V_temp3x1=V_beta_hat*Rednt_cir_R;
+//	V_temp4x1.Vec_ext_1_row(V_temp3x1,1); //3x1 extend to 4x1
+//
+//	temp=Rogridues(Rednt_alpha,V_r_wst_unit)*V_temp4x1;
+//
+//
+//	Matrix V_R_u(3,1);
+//	V_R_u.Vec_export_3_row(temp);
+//	
+//
+//	Matrix V_r_u(3,1);
+//	V_r_u=V_r_m+V_R_u;
+//
+//	theta[Index_AXIS1]=atan2(-V_r_u(1,1),-V_r_u(3,1));//theta(1)=atan2(-V_r_u(1),-V_r_u(3));
+//
+//
+//	if (theta[Index_AXIS1] !=0) 
+//		theta[Index_AXIS2]=atan2(V_r_u(2,1),-V_r_u(1,1)/sin(theta[Index_AXIS1]));
+//	else
+//		theta[Index_AXIS2]=atan2(-V_r_u(2,1),V_r_u(3,1));
+//	
+//
+//
+//	//theat 3
+//	//theta(3)=atan2( sin(theta(2))*sin(theta(1))*V_r_wst(1)+cos(theta(2))*V_r_wst(2)+sin(theta(2))*cos(theta(1))*V_r_wst(3),cos(theta(1))*V_r_wst(1)-sin(theta(1))*V_r_wst(3));
+//	theta[Index_AXIS3]=atan2( sin(theta[Index_AXIS2])*sin(theta[Index_AXIS1])*V_r_wst(1,1)+cos(theta[Index_AXIS2])*V_r_wst(2,1)+sin(theta[Index_AXIS2])*cos(theta[Index_AXIS1])*V_r_wst(3,1),cos(theta[Index_AXIS1])*V_r_wst(1,1)-sin(theta[Index_AXIS1])*V_r_wst(3,1));
+//
+//
+//
+//	//theat 5
+//	Matrix V_r_f(3,1);
+//	V_r_f=V_r_wst-V_r_u;
+//
+//	Matrix V_Axis6(3,1);
+//	V_Axis6=MatrixMath::cross(V_H_hat_y,-V_r_f)*(1/norm(MatrixMath::cross(V_H_hat_y,-V_r_f)));//V_Axis6=cross(V_H_hat_y,-V_r_f)/norm(cross(V_H_hat_y,-V_r_f));
+//
+//	Matrix V_r_wst_u(3,1);
+//	V_r_wst_u=V_r_wst+V_Axis6;
+//
+//	Matrix A1_4(4,4);
+//	A1_4=MatrixMath::RotY(theta[Index_AXIS1])*MatrixMath::RotX(theta[Index_AXIS2])*MatrixMath::RotZ(theta[Index_AXIS3])*MatrixMath::Tz(-l1)*MatrixMath::RotY(theta[Index_AXIS4]);//A1_4=Ry(theta(1))*Rx(theta(2))*Rz(theta(3))*Tz(-L1)*Ry(theta(4));
+//	
+//
+//	Matrix V_temp_f(4,1);
+//	Matrix V_r_wst_u_4x1(4,1);
+//	V_r_wst_u_4x1.Vec_ext_1_row(V_r_wst_u,1);
+//	
+//
+//	V_temp_f=MatrixMath::Inv(A1_4)*V_r_wst_u_4x1;//V_temp_f=inv(A1_4)*[V_r_wst_u;1]; //(3.31) 這個是補一列1上去的意思,need fix
+//	theta[Index_AXIS5]=atan2(V_temp_f(2,1),V_temp_f(1,1));//theta(5)=atan2(V_temp_f(2),V_temp_f(1));
+//
+//	
+//	//theat 6
+//	Matrix V_r_wst_r(3,1);
+//	V_r_wst_r=V_r_wst+V_H_hat_y;
+//
+//	Matrix A1_5(4,4);
+//	A1_5=A1_4*MatrixMath::RotZ(theta[Index_AXIS5])*MatrixMath::Tz(-l2);//A1_5=A1_4*Rz(theta(5))*Tz(-L2);
+//	
+//	Matrix V_temp_g(4,4);
+//	Matrix V_r_wst_r_4x1(4,1);
+//	V_r_wst_r_4x1.Vec_ext_1_row(V_r_wst_r,1);
+//	
+//	V_temp_g=MatrixMath::Inv(A1_5)*V_r_wst_r_4x1; //V_temp_g=inv(A1_5)*[V_r_wst_r;1]; //(3.38)  這個是補一列1上去的意思,need fix
+//	
+//	theta[Index_AXIS6]=atan2(V_temp_g(3,1),V_temp_g(2,1));
+//
+//
+//	//theat 7
+//	Matrix V_r_wst_f(3,1);
+//	V_r_wst_f=V_r_wst+V_H_hat_x;
+//
+//	Matrix A1_6(4,4);
+//	A1_6=A1_5*MatrixMath::RotX(theta[Index_AXIS6]);
+//
+//	Matrix V_temp_h(3,1);
+//	Matrix V_r_wst_f_4x1(4,1);
+//	V_r_wst_f_4x1.Vec_ext_1_row(V_r_wst_f,1);
+//	
+//	V_temp_h=MatrixMath::Inv(A1_6)*V_r_wst_f_4x1; //V_temp_h=inv(A1_6)*[V_r_wst_f;1]; 
+//	
+//	theta[Index_AXIS7]=atan2(-V_temp_h(1,1),-V_temp_h(3,1));//theta(7)=atan2(-V_temp_h(1),-V_temp_h(3));
+//
+//
+//	return 0;
+//}
 
 
 //第七軸為roll軸
 //目前測試矩形路徑平均大概需要10.8ms
+/*
 int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const float Pend[3],const float PoseAngle[3],const float Rednt_alpha,float* out_theta)
 {
     //輸出參數initial
@@ -926,10 +1002,29 @@ int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const fl
 	Matrix V_temp3x1(3,1);//需要寫一個可以補1的函試
 	Matrix V_temp4x1(4,1);
 	V_temp3x1=V_beta_hat*Rednt_cir_R;
-	V_temp4x1.Vec_ext_1_row(V_temp3x1,1); //3x1 extend to 4x1
-	temp=Rogridues(Rednt_alpha,V_r_wst_unit)*V_temp4x1;
+
+	LARGE_INTEGER nFreq;
+
+	LARGE_INTEGER nBeginTime;
+
+	LARGE_INTEGER nEndTime;
+
+	double time;
+	double delaytime=1;
+	QueryPerformanceFrequency(&nFreq);
+	QueryPerformanceCounter(&nBeginTime); 
+	V_temp4x1.Vec_ext_1_row(V_temp3x1,1); //3x1 extend to 4x1  0.23MS
+
+	QueryPerformanceCounter(&nEndTime);
+	time=(double)(nEndTime.QuadPart-nBeginTime.QuadPart)*1000/(double)nFreq.QuadPart;
+	
+
 
 	
+	temp=Rogridues(Rednt_alpha,V_r_wst_unit)*V_temp4x1; //7.4ms
+
+	
+
 	Matrix V_R_u(3,1);//V_R_u=temp(1:3,1);
 	V_R_u.Vec_export_3_row(temp);
 	
@@ -1094,6 +1189,285 @@ int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const fl
 
 	return 0;
 }
+*/
+//#define SHOW_MATRIX
+//使用opencv matrix計算  第一次執行建構Mat 需要50ms 下次執行後時間可縮到1.5ms
+int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const float Pend[3],const float PoseAngle[3],const float Rednt_alpha,float* out_theta)
+{
+    //輸出參數initial
+	float theta[7]={0};
+	float tempfloat=0.0;
+    
+	//輸入連桿長度
+	//linkL[0];//L0 頭到肩膀
+	//linkL[1];//L1 上臂L型長邊
+	//linkL[2];//L2 上臂L型短邊
+	//linkL[3];//L3 上臂L型短邊
+	//linkL[4];//L4 上臂L型長邊
+	//linkL[5];//L5 end effector
+	
+
+    //== 求出H_hat_x ==//
+    Mat R=R_z1x2y3(PoseAngle[0],PoseAngle[1],PoseAngle[2]); //alpha,beta,gamma
+#ifdef SHOW_MATRIX
+	cout<< "R="<<endl<<""<<R<<endl<<endl;
+#endif
+  
+	Mat V_H_hat_x=R.col(0);  //取出歐拉角轉換的旋轉矩陣，取出第1行為X軸旋轉後向量//0.016ms
+
+	
+	V_H_hat_x = V_H_hat_x/norm(V_H_hat_x,NORM_L2);
+
+
+#ifdef SHOW_MATRIX
+	cout<< "V_H_hat_x="<<endl<<""<<V_H_hat_x<<endl<<endl;
+#endif
+
+    //==H_hat_x==//
+	Mat V_H_hat_z=R.col(2); //取出歐拉角轉換的旋轉矩陣，取出第3行為Z軸旋轉後向量
+	V_H_hat_z = V_H_hat_z/norm(V_H_hat_z,NORM_L2);
+
+	Mat V_r_end=(Mat_<float>(3,1) <<Pend[0]-base[0],//x 
+									Pend[1]-base[1],//y
+									Pend[2]-base[2]);//z
+	
+   
+	Mat V_r_h=V_H_hat_x*linkL[5];//L5
+
+
+	Mat V_r_wst=V_r_end-V_r_h;
+  
+	// ==Axis4== //
+    float ru_norm=sqrt(pow(linkL[1],2)+pow(linkL[2],2)); //L型的斜邊長度
+    float rf_norm=sqrt(pow(linkL[3],2)+pow(linkL[4],2));
+	
+    float theta_tmp=(float)acos((pow(ru_norm,2) + pow(rf_norm,2)- pow(norm(V_r_wst),2)) / (2*ru_norm*rf_norm));
+    theta[Index_AXIS4]=(float)(2*M_PI)-atan2(linkL[1],linkL[2])-atan2(linkL[4],linkL[3])-theta_tmp;
+
+    // ==AXIS1 2== //
+	Mat V_r_m=(pow(ru_norm,2)-pow(rf_norm,2)+pow(norm(V_r_wst),2))/(2*pow(norm(V_r_wst),2))*V_r_wst;
+
+	//Redundant circle 半徑R
+	float Rednt_cir_R =(float)(pow(ru_norm,2)- pow((pow(ru_norm,2)-pow(rf_norm,2) + pow(norm(V_r_wst),2))/(2*norm(V_r_wst)) , 2));
+	Rednt_cir_R=sqrt(Rednt_cir_R);
+
+   
+	//圓中心點到Elbow向量 V_r_u
+	Mat V_shx=(Mat_<float>(3,1) <<	1,  
+									0,
+									0);
+
+	Mat V_shy=(Mat_<float>(3,1) <<	0,  
+									1,
+									0);
+
+	Mat V_shz=(Mat_<float>(3,1) <<	0,  
+									0,
+									1);
+
+
+	Mat temp_cross=V_r_wst.cross(V_shz);
+	Mat V_alpha_hat=temp_cross/norm(temp_cross,NORM_L2);
+
+	
+	temp_cross=V_r_wst.cross(V_alpha_hat);
+	Mat V_beta_hat=temp_cross/norm(temp_cross,NORM_L2);
+
+	Mat V_r_wst_unit=V_r_wst/norm(V_r_wst,NORM_L2);
+	Mat V_temp3x1=V_beta_hat*Rednt_cir_R;
+
+	float *pV_temp3x1=V_temp3x1.ptr<float>(0);
+	Mat V_temp4x1=(Mat_<float>(4,1)<<	pV_temp3x1[0],
+										pV_temp3x1[1],
+										pV_temp3x1[2],
+										1);
+
+	Mat temp=Rogridues(Rednt_alpha,V_r_wst_unit)*V_temp4x1;//temp=Rogridues(Rednt_alpha,V_r_wst/norm(V_r_wst)) *[Rednt_cir_R*V_beta_hat;1];  //Rednt_alpha的方向和論文上的方向性相反 //0.04ms
+	
+	float* ptemp=temp.ptr<float>(0);
+
+	Mat V_R_u=(Mat_<float>(3,1)<<	ptemp[0],
+									ptemp[1],
+									ptemp[2]);					
+
+	Mat V_r_u=V_r_m+V_R_u;
+	Mat V_r_f=V_r_wst-V_r_u;
+
+	temp_cross=V_r_u.cross(V_r_f);
+	Mat Vn_u_f=temp_cross/norm(temp_cross,NORM_L2);//Vn_u_f=cross(V_r_u,V_r_f)/norm(cross(V_r_u,V_r_f)); //ru 及 rf的z法向量
+	
+	float theta_upoff=atan(linkL[2]/linkL[1]);
+	float* pV_r_u=V_r_u.ptr<float>(0);
+	V_temp4x1=(Mat_<float>(4,1)<<	pV_r_u[0],
+									pV_r_u[1],
+									pV_r_u[2],
+									1);				
+
+	temp=Rogridues(-theta_upoff,Vn_u_f)*V_temp4x1;//temp=Rogridues(-theta_upoff,Vn_u_f)*[V_r_u;1];  //旋轉 V_r_u  到V_ru_l1
+	Mat V_ru_l1=(Mat_<float>(3,1)<<	ptemp[0],
+									ptemp[1],
+									ptemp[2]);		
+	V_ru_l1=linkL[1]*V_ru_l1/norm(V_ru_l1,NORM_L2); //調整成L1長度
+	
+	float* pV_ru_l1=V_ru_l1.ptr<float>(0);
+	theta[Index_AXIS1]=atan2(pV_ru_l1[0],-pV_ru_l1[2]);//theta(1)=atan2(V_ru_l1(1),-V_ru_l1(3));
+
+	if (theta[Index_AXIS1] !=0) 
+		theta[Index_AXIS2]=atan2(pV_ru_l1[1],pV_ru_l1[0]/sin(theta[Index_AXIS1]));
+	else
+		theta[Index_AXIS2]=atan2(pV_ru_l1[1],-pV_ru_l1[2]);
+
+	
+	// ==AXIS3== //
+	Mat nV_shy=V_shy*(-1);
+	float* pnV_shy=nV_shy.ptr<float>(0);
+	V_temp4x1=(Mat_<float>(4,1)<<	pnV_shy[0],
+									pnV_shy[1],
+									pnV_shy[2],
+									1);			
+	temp=RotY(-theta[Index_AXIS1])*RotX(theta[Index_AXIS2])*V_temp4x1;// V_n_yrot12=Ry(-theta(1))*Rx(theta(2))*[-V_shy;1];  //第一軸和大地Y座標方向相反
+
+	Mat V_n_yrot12=(Mat_<float>(3,1)<<	ptemp[0],
+										ptemp[1],
+										ptemp[2]);		
+
+	Mat Vn_nuf_nyrot12=Vn_u_f.cross(V_n_yrot12);
+	Vn_nuf_nyrot12=Vn_nuf_nyrot12/norm(Vn_nuf_nyrot12,NORM_L2);
+	tempfloat=(float)(V_n_yrot12.dot(Vn_u_f)/norm(V_n_yrot12,NORM_L2)/norm(Vn_u_f,NORM_L2));// temp=V_n_yrot12'*Vn_u_f/norm(V_n_yrot12)/norm(Vn_u_f); 
+	
+
+	//防止在acos(1.000000.....)的時候會出現虛部的情況
+	if (abs(tempfloat-1) < DEF_COSVAL_VERY_SMALL)
+    {   
+		if (tempfloat >0)
+			tempfloat=1;
+		else
+			tempfloat=-1;
+	}
+
+	//Vn_u_f 和 V_n_yrot12的法向量   與 V_ru_l1同方向 theta(3)需要加負號
+	if ( norm(Vn_nuf_nyrot12 - V_ru_l1/norm(V_ru_l1,NORM_L2),NORM_L2) < DEF_NORM_VERY_SMALL )
+		theta[Index_AXIS3]=-acos(tempfloat);
+	else
+		theta[Index_AXIS3]=acos(tempfloat);
+
+	
+    // ==Axis5== //
+	float theat_lowoff=atan(linkL[3]/linkL[4]); //temp=Rogridues(theat_lowoff,Vn_u_f)*[V_r_f;1];  //旋轉 V_r_f  V_rf_l4
+	float *pV_r_f=V_r_f.ptr<float>(0);
+	V_temp4x1=(Mat_<float>(4,1)<<	pV_r_f[0],
+									pV_r_f[1],
+									pV_r_f[2],
+									1);			
+	temp=Rogridues(theat_lowoff,Vn_u_f)*V_temp4x1; 
+	Mat V_rf_l4=(Mat_<float>(3,1)<<	ptemp[0],
+									ptemp[1],
+									ptemp[2]);		
+	V_rf_l4=V_rf_l4*linkL[4]/norm(V_rf_l4,NORM_L2); //調整成L4長度
+
+	//V_n_rfl4 及V_n_rf形成的平面 的法向量
+	Mat Vn_rfl4_nuf=V_rf_l4.cross(Vn_u_f)/norm(V_rf_l4.cross(Vn_u_f));//Vn_rfl4_nuf=cross(V_rf_l4,Vn_u_f)/norm(cross(V_rf_l4,Vn_u_f));
+	float t_rfl4_nuf=(float)((Vn_rfl4_nuf.dot(V_r_wst)-Vn_rfl4_nuf.dot(V_r_end))/pow(norm(Vn_rfl4_nuf,NORM_L2),2));//  t_rfl4_nuf=(Vn_rfl4_nuf'*V_r_wst-Vn_rfl4_nuf'*V_r_end)/(norm(Vn_rfl4_nuf)^2); //V_n_rf,V_n_rfl4平面上，且經過V_r_end點的直線參數式的t 為rfl4_nuf
+	Mat Vproj_end_rfl4_nuf =V_r_end+t_rfl4_nuf*Vn_rfl4_nuf;//V_r_end 沿著V_n_rfl4,V_n_rf平面法向量投影在平面上的點
+	Mat V_wst_to_projend_rfl4_nuf=Vproj_end_rfl4_nuf-V_r_wst;
+
+	//V_n_rfl4 及V_n_rf形成的平面 的法向量
+	//防止在acos(1.000000.....)的時候會出現虛部的情況
+	tempfloat=(float)(V_rf_l4.dot(V_wst_to_projend_rfl4_nuf)/norm(V_rf_l4,NORM_L2)/norm(V_wst_to_projend_rfl4_nuf,NORM_L2));//temp=V_rf_l4'*V_wst_to_projend_rfl4_nuf/norm(V_rf_l4)/norm(V_wst_to_projend_rfl4_nuf);
+
+	if (abs(tempfloat-1) < DEF_COSVAL_VERY_SMALL) 
+	{
+		if (tempfloat >0)
+			tempfloat=1;
+		else
+			tempfloat=-1;
+	}	
+
+	Mat V_rf_l4_unit=V_rf_l4/norm(V_rf_l4,NORM_L2);
+	Mat V_wst_to_projend_rfl4_nuf_unit=V_wst_to_projend_rfl4_nuf/norm(V_wst_to_projend_rfl4_nuf,NORM_L2);
+	Mat Vn_rfl4_WstToProjEndRfl4Nuf=V_rf_l4_unit.cross(V_wst_to_projend_rfl4_nuf_unit);
+
+
+	//平面法向量 和 Vn_rfl4_nuf  同邊要加負號  判斷theta5要往上或往下轉
+	if (norm(Vn_rfl4_WstToProjEndRfl4Nuf - Vn_rfl4_nuf,NORM_L2) < DEF_NORM_VERY_SMALL)
+        theta[Index_AXIS5]=-acos(tempfloat); 
+    else
+        theta[Index_AXIS5]=acos(tempfloat); 
+
+	
+
+	// ==Axis6== //
+	float *pVn_u_f=Vn_u_f.ptr<float>(0);
+	V_temp4x1=(Mat_<float>(4,1)<<	pVn_u_f[0],
+									pVn_u_f[1],
+									pVn_u_f[2],
+									1);			
+	temp=Rogridues(-theta[Index_AXIS5],Vn_rfl4_nuf)*V_temp4x1; //nuf 沿著 Vn_rfl4_nuf 旋轉第5軸角度得到投影點與目標點平面的法向量
+	Mat Vn_nuf_rotx5_along_NRfl4Nuf=(Mat_<float>(3,1)<<	ptemp[0],
+														ptemp[1],
+														ptemp[2]);		
+	Vn_nuf_rotx5_along_NRfl4Nuf=Vn_nuf_rotx5_along_NRfl4Nuf/norm(Vn_nuf_rotx5_along_NRfl4Nuf,NORM_L2);
+
+	Mat V_wst_to_end=V_r_end-V_r_wst;
+	    
+	Mat Vn_WstToEnd_WstToProjEndRfl4Nuf=V_wst_to_end.cross(V_wst_to_projend_rfl4_nuf);//V_wst_to_projend 和 V_wst_to_end的法向量
+	Vn_WstToEnd_WstToProjEndRfl4Nuf=Vn_WstToEnd_WstToProjEndRfl4Nuf/norm(Vn_WstToEnd_WstToProjEndRfl4Nuf,NORM_L2);
+
+	//利用法向量方向 判斷theta6旋轉方向
+	tempfloat=(float)(V_wst_to_projend_rfl4_nuf.dot(V_wst_to_end)/norm(V_wst_to_projend_rfl4_nuf,NORM_L2)/norm(V_wst_to_end,NORM_L2));//temp=V_wst_to_projend_rfl4_nuf'*V_wst_to_end/norm(V_wst_to_projend_rfl4_nuf)/norm(V_wst_to_end);
+	if (norm(Vn_WstToEnd_WstToProjEndRfl4Nuf - Vn_nuf_rotx5_along_NRfl4Nuf) < DEF_NORM_VERY_SMALL)
+        theta[Index_AXIS6]=-acos(tempfloat); 
+    else
+        theta[Index_AXIS6]=acos(tempfloat); 
+	
+	// ==Axis7== //	
+	float *pV_shx=V_shx.ptr<float>(0);
+	V_temp4x1=(Mat_<float>(4,1)<<	pV_shx[0],
+									pV_shx[1],
+									pV_shx[2],
+									1);		
+	Mat V_x_rot1to6=RotY(-theta[Index_AXIS1])*RotX(theta[Index_AXIS2])*V_temp4x1;//V_x_rot1to6=Ry(-theta(1))*Rx(theta(2))*[V_shx;1];  //第一軸和大地Z座標方向相反
+
+
+	//V_shx經過1to軸旋轉後變應該要與末點座標系的Z軸貼齊
+	temp=Rogridues(theta[Index_AXIS3],V_ru_l1*(1/norm(V_ru_l1)))*V_x_rot1to6;		//temp=Rogridues(theta(3),V_ru_l1/norm(V_ru_l1))*V_x_rot1to6;  
+	temp=Rogridues(theta[Index_AXIS4],Vn_u_f*(1/norm(Vn_u_f)))*temp;				//temp=Rogridues(theta(4),Vn_u_f/norm(Vn_u_f))*temp;  
+	temp=Rogridues(theta[Index_AXIS5],Vn_rfl4_nuf*(1/norm(Vn_rfl4_nuf)))*temp;		//temp=Rogridues(theta(5),Vn_rfl4_nuf/norm(Vn_rfl4_nuf))*temp; 
+	temp=Rogridues(theta[Index_AXIS6],Vn_nuf_rotx5_along_NRfl4Nuf)*temp;			//temp=Rogridues(theta(6),Vn_nuf_rotx5_along_NRfl4Nuf)*temp; 
+	
+	V_x_rot1to6=(Mat_<float>(3,1)<<	ptemp[0],
+									ptemp[1],
+									ptemp[2]);	
+	V_x_rot1to6=V_x_rot1to6/norm(V_x_rot1to6,NORM_L2);
+
+	//xrot1to6 和 V_H_hat_z 的法向量來判斷第7軸旋轉方向
+	Mat Vn_xrot1to6_VHhatz=V_x_rot1to6.cross(V_H_hat_z);
+	Vn_xrot1to6_VHhatz=Vn_xrot1to6_VHhatz/norm(Vn_xrot1to6_VHhatz,NORM_L2);
+
+	//V_shx經過123456軸旋轉後和末點座標系的Z軸還差幾度
+	tempfloat=(float)(V_x_rot1to6.dot(V_H_hat_z)/norm(V_x_rot1to6,NORM_L2)/norm(V_H_hat_z,NORM_L2));// theta(7)=acos(V_x_rot1to6'*V_H_hat_z/norm(V_x_rot1to6)/norm(V_H_hat_z));
+	if (abs(tempfloat-1) < DEF_COSVAL_VERY_SMALL)
+    {   
+		if (tempfloat >0)
+			tempfloat=1;
+		else
+			tempfloat=-1;
+	}
+
+	if (norm(Vn_xrot1to6_VHhatz - V_H_hat_x,NORM_L2) <  DEF_NORM_VERY_SMALL)
+        theta[Index_AXIS7]=acos(tempfloat);
+    else
+        theta[Index_AXIS7]=-acos(tempfloat);  
+	
+	// ==左右手第1軸方向相反== //
+    if (RLHand == DEF_LEFT_HAND) //左手和右手第一軸方向相反
+        theta[Index_AXIS1]=-theta[Index_AXIS1];
+    
+	//==output degree==//
+	memcpy(out_theta,theta,sizeof(theta));
+	
+	return 0;
+}
 
 //================================================================================//
 //==prevent angle over constrain.If over occur,over_index shows which axis over ==//
@@ -1150,7 +1524,25 @@ int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_de
 	else if(RLHand==DEF_LEFT_HAND)
 		base[DEF_Y]=L0;
 
+	//LARGE_INTEGER nFreq;
+	//LARGE_INTEGER nBeginTime;
+
+	//LARGE_INTEGER nEndTime;
+
+	//double time;
+	//double delaytime=1;
+
+	//QueryPerformanceFrequency(&nFreq);
+	//QueryPerformanceCounter(&nBeginTime); 
+
+
+
 	rt= IK_7DOF_FB7roll(RLHand,linkL,base,Pend,Pose_rad,Rednt_alpha,theta);
+
+	//QueryPerformanceCounter(&nEndTime);
+	//time=(double)(nEndTime.QuadPart-nBeginTime.QuadPart)*1000/(double)nFreq.QuadPart;
+	//printf("%fms\n",time);
+
 
 	if(RLHand==DEF_RIGHT_HAND)
 	{
@@ -1217,6 +1609,7 @@ int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R
 
 	//inverse kinematics right hand
 	rt= IK_7DOF_FB7roll(DEF_RIGHT_HAND,linkL,base_R,Pend_R,Pose_rad_R,Rednt_alpha_rad_R,theta_R);
+
 
 	//確認joint 使用
 #ifdef CHECK_JOINT_PATH
