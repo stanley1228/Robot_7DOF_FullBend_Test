@@ -17,12 +17,12 @@ using namespace std;
 
 
 //#define CHECK_CARTESIAN_PATH 
-#define GRIPPER_ON_LATTE
+//#define GRIPPER_ON_LATTE
 #define MOVETOPOINT_DUAL
 //#define CHECK_JOINT_PATH   //MoveToPoint_Dual函式 那邊也要def
 #define MOVE_TO_INITIAL_POINT
 //#define RECORD_JOINT_ANGLE
-#define DEF_WAIT_ENTER
+//#define DEF_WAIT_ENTER
 #ifdef  CHECK_JOINT_PATH
 fstream gfileR;
 fstream gfileL;
@@ -1236,7 +1236,7 @@ void TestGetDrink()
 	float pos_deg_last_ok_L[MAX_AXIS_NUM]={0};
 	int n=0;
 	int rt=0;
-	char buffer[100];
+	
 	//==Robotic arm pose==//
 	float Pend_R[3]={0,0,0};
 	float pose_deg_R[3]={60,0,0};
@@ -1503,12 +1503,13 @@ void TestGetDrink()
 
 
 #ifdef MOVETOPOINT_DUAL
-			MoveToPoint_Dual(Pend_R,pose_deg_R,Rednt_alpha_R,vel_deg_R,Pend_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);  //20ms
+		MoveToPoint_Dual(Pend_R,pose_deg_R,Rednt_alpha_R,vel_deg_R,Pend_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);  //20ms
 #endif
 		printf("Pend_R=[%4.1f,%4.1f,%4.1f],Pend_L=[%4.1f,%4.1f,%4.1f]\n",Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z],Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
 
 		//==確認軌跡點==//
 #ifdef CHECK_CARTESIAN_PATH
+		char buffer[100];
 		n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f\n",abst,Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z]);
 		fileR.write(buffer,n);
 
@@ -1661,15 +1662,15 @@ void TestSewingAction()
 
 	SeqItv[S_INITIAL]=0;
 	SeqItv[S_RL_HOLD_1]=2;
-	SeqItv[S_RL_F_200]=10;
+	SeqItv[S_RL_F_200]=5;
 	SeqItv[S_R_REL_1]=2;
 	SeqItv[S_R_X_B_200_S1]=10;
 	SeqItv[S_R_HOLD_1]=2;
-	SeqItv[S_R_X_CIRF_200_L_X_CIRB_200]=10;
+	SeqItv[S_R_X_CIRF_200_L_X_CIRB_200]=5;
 	SeqItv[S_R_REL_2]=2;
 	SeqItv[S_R_X_B_200_S2]=10;
 	SeqItv[S_R_HOLD_2]=2;
-	SeqItv[S_R_X_F_200_L_X_F_200]=10;
+	SeqItv[S_R_X_F_200_L_X_F_200]=5;
 
 	//==絕對時間標計==//
 	float Seqt[SegSize]={0};
@@ -1687,8 +1688,7 @@ void TestSewingAction()
 	//==流程需用變數
 	//float CycleT=0.1f;
 #ifndef RECORD_JOINT_ANGLE
-	float CycleT=0.04f; //不讀feedback時 大約22m
-	//float CycleT=0.01f;
+	float CycleT=0.01f; //不讀feedback時 原matrix 大約22m  opencv mat 大概2.5ms 因此抓10ms
 #else
 	float CycleT=0.1f; //有讀feedback時需要 22+17+17=56ms 19+16+16=51ms
 #endif
@@ -1731,7 +1731,7 @@ void TestSewingAction()
 	float pos_deg_last_ok_L[MAX_AXIS_NUM]={0};
 	int n=0;
 	int rt=0;
-	char buffer[100];
+	
 	//==Robotic arm pose==//
 	float Pend_R[3]={0,0,0};
 	float pose_deg_R[3]={70,-90,0};
@@ -1742,8 +1742,9 @@ void TestSewingAction()
 	float pose_deg_L[3]={-60,90,0};
 	float Rednt_alpha_L=90;
 	float vel_deg_L=10;
-
+	//=========================//
 	//==move to initial point==//
+	//=========================//
 #ifdef	MOVE_TO_INITIAL_POINT
 	//MoveToPoint_Dual(R_p[0],pose_deg_R,Rednt_alpha_R,vel_deg_R,L_p[0],pose_deg_L,Rednt_alpha_L,vel_deg_L);  //20ms
 	MoveToPoint(DEF_RIGHT_HAND,R_p[0],pose_deg_R,Rednt_alpha_R,vel_deg_R);
@@ -1757,10 +1758,20 @@ void TestSewingAction()
 	printf("In initial point. press any key to continue...\n");
 	getchar();
 #endif
+	//=========================//
 	//==Sewing process start ==//
+	//=========================//
+	LARGE_INTEGER nFreq;
+	LARGE_INTEGER nBeginTime;
+	LARGE_INTEGER nEndTime;
+
+	QueryPerformanceFrequency(&nFreq);
+	
 	float abst=0.0;
 	for(abst=0.0;abst<(TotalTime+CycleT);abst+=CycleT)
 	{
+		QueryPerformanceCounter(&nBeginTime); //Record cycle start time
+
 		if(abst<=Seqt[S_RL_HOLD_1])//左右手夾緊
 		{
 			Itv=SeqItv[S_RL_HOLD_1];
@@ -1959,12 +1970,13 @@ void TestSewingAction()
 
 
 #ifdef MOVETOPOINT_DUAL
-		MoveToPoint_Dual(Pend_R,pose_deg_R,Rednt_alpha_R,vel_deg_R,Pend_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);  //20ms
+		MoveToPoint_Dual(Pend_R,pose_deg_R,Rednt_alpha_R,vel_deg_R,Pend_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);  //使用原本matrix大約20ms    改為opencv matri後平均2.5ms 因此cycle time想抓10ms  
 #endif
 		printf("Pend_R=[%4.1f,%4.1f,%4.1f],Pend_L=[%4.1f,%4.1f,%4.1f]\n",Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z],Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
 
 		//==確認軌跡點==//
 #ifdef CHECK_CARTESIAN_PATH
+		char buffer[100];
 		n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f\n",abst,Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z]);
 		fileR.write(buffer,n);
 
@@ -2030,6 +2042,15 @@ void TestSewingAction()
 			fileL.write(buffer,n);
 		}
 #endif
+
+
+		do
+		{
+			Sleep(0);
+			QueryPerformanceCounter(&nEndTime);
+			//printf("%f\n",(double)(nEndTime.QuadPart-nBeginTime.QuadPart)*1000/(double)nFreq.QuadPart);
+		}
+		while((double)(nEndTime.QuadPart-nBeginTime.QuadPart)/(double)nFreq.QuadPart < CycleT);
 	}	
 
 #if	defined(RECORD_JOINT_ANGLE) || defined(CHECK_CARTESIAN_PATH) 
@@ -2062,8 +2083,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//====================//
 	//===initial gripper==//
 	//====================//
-	printf("Gripper_LattePanda_Initial...\n");
-	Gripper_LattePanda_Initial();
+	//printf("Gripper_LattePanda_Initial...\n");
+	//Gripper_LattePanda_Initial();
 
 
 	//====================//
@@ -2122,7 +2143,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//Sleep(1500);
 
 	DXL_Terminate_x86();
-	Gripper_LattePanda_Close();
+	//Gripper_LattePanda_Close();
 	
 	return 0;
 }
