@@ -17,7 +17,7 @@ using namespace std;
 
 
 //#define CHECK_CARTESIAN_PATH 
-//#define GRIPPER_ON_LATTE
+#define GRIPPER_ON_LATTE
 #define MOVETOPOINT_DUAL
 //#define CHECK_JOINT_PATH   //MoveToPoint_Dual函式 那邊也要def
 #define MOVE_TO_INITIAL_POINT
@@ -40,19 +40,24 @@ int TestRectangle_Dual()
 	float R_L[3]={500,200,-200};
 	float S_L[3]={500,50 ,-200};
  
-	float Pend_R[3]={0,0,0};
-	float pose_deg_R[3]={60,0,0};
-	float Rednt_alpha_R=-90;
+	//float Pend_R[3]={0,0,0};
+	//float pose_deg_R[3]={60,0,0};
+	//float Rednt_alpha_R=-90;
+	float PathPlanPoint_R[7]={500,-50,0,60,0,0,-90};
 	float vel_deg_R=13;
 
-	float Pend_L[3]={0,0,0};
-	float pose_deg_L[3]={-60,0,0};
-	float Rednt_alpha_L=90;
+
+	//float Pend_L[3]={0,0,0};
+	//float pose_deg_L[3]={-60,0,0};
+	//float Rednt_alpha_L=90;
+	float PathPlanPoint_L[7]={500,50,0,-60,0,0,90};
 	float vel_deg_L=13;
 
+	
+
 	//move to initial point
-	MoveToPoint(DEF_RIGHT_HAND,O_R,pose_deg_R,Rednt_alpha_R,vel_deg_R);
-	MoveToPoint(DEF_LEFT_HAND,O_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);
+	MoveToPoint(DEF_RIGHT_HAND,PathPlanPoint_R,vel_deg_R);
+	MoveToPoint(DEF_LEFT_HAND,PathPlanPoint_L,vel_deg_L);
 	Sleep(3000);
 
 	//畫正方形做IK 測試
@@ -62,39 +67,39 @@ int TestRectangle_Dual()
 		{
 			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
 			{
-				Pend_R[f]=O_R[f]+(Q_R[f]-O_R[f])*t/25; 
-				Pend_L[f]=O_L[f]+(Q_L[f]-O_L[f])*t/25; 
+				PathPlanPoint_R[f]=O_R[f]+(Q_R[f]-O_R[f])*t/25; 
+				PathPlanPoint_L[f]=O_L[f]+(Q_L[f]-O_L[f])*t/25; 
 			}
 		}
 		else if(t<=50)
 		{
 			for(int f=0;f<3;f++)  
 			{
-				Pend_R[f]=Q_R[f]+(R_R[f]-Q_R[f])*(t-25)/25;
-				Pend_L[f]=Q_L[f]+(R_L[f]-Q_L[f])*(t-25)/25;
+				PathPlanPoint_R[f]=Q_R[f]+(R_R[f]-Q_R[f])*(t-25)/25;
+				PathPlanPoint_L[f]=Q_L[f]+(R_L[f]-Q_L[f])*(t-25)/25;
 			}
 		}
 		else if(t<=75)
 		{
 			for(int f=0;f<3;f++)  
 			{
-				Pend_R[f]=R_R[f]+(S_R[f]-R_R[f])*(t-50)/25;
-				Pend_L[f]=R_L[f]+(S_L[f]-R_L[f])*(t-50)/25;
+				PathPlanPoint_R[f]=R_R[f]+(S_R[f]-R_R[f])*(t-50)/25;
+				PathPlanPoint_L[f]=R_L[f]+(S_L[f]-R_L[f])*(t-50)/25;
 			}
 		}
 		else 
 		{
 			for(int f=0;f<3;f++)  
 			{
-				Pend_R[f]=S_R[f]+(O_R[f]-S_R[f])*(t-75)/15;
-				Pend_L[f]=S_L[f]+(O_L[f]-S_L[f])*(t-75)/15;
+				PathPlanPoint_R[f]=S_R[f]+(O_R[f]-S_R[f])*(t-75)/15;
+				PathPlanPoint_L[f]=S_L[f]+(O_L[f]-S_L[f])*(t-75)/15;
 			}
 		}
 	
 		Sleep(500);
-		MoveToPoint_Dual(Pend_R,pose_deg_R,Rednt_alpha_R,vel_deg_R,Pend_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);
+		MoveToPoint_Dual(PathPlanPoint_R,vel_deg_R,PathPlanPoint_L,vel_deg_L);
 		//DBGMSG(("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]))
-		printf("Pend_R[%d]=[%f,%f,%f],Pend_L[%d]=[%f,%f,%f]\n",t,Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z],Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
+		printf("Pend_R[%d]=[%f,%f,%f],Pend_L[%d]=[%f,%f,%f]\n",t,PathPlanPoint_R[DEF_X],PathPlanPoint_R[DEF_Y],PathPlanPoint_R[DEF_Z],PathPlanPoint_L[DEF_X],PathPlanPoint_L[DEF_Y],PathPlanPoint_L[DEF_Z]);
 	}
 
 	return 0;
@@ -128,8 +133,10 @@ int TestRectangle_RightHand()
 	float Q[3]={500,-200,0};
 	float R[3]={500,-200,-150};
 	float S[3]={500,-50,-150};
-	float point[3]={0,0,0};
-	float pose_deg[3]={30,0,0};
+
+	float PathPlanPoint_R[7]={500,-50,0,30,0,0,-90};
+	//float point[3]={0,0,0};
+	//float pose_deg[3]={30,0,0};
 	float vel_deg=13;
 	
 
@@ -139,28 +146,29 @@ int TestRectangle_RightHand()
 		if(t<=25)
 		{
 			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
-				point[f]=O[f]+(Q[f]-O[f])*t/25; 
+				PathPlanPoint_R[f]=O[f]+(Q[f]-O[f])*t/25; 
 		}
 		else if(t<=50)
 		{
 			for(int f=0;f<3;f++)  
-				point[f]=Q[f]+(R[f]-Q[f])*(t-25)/25;
+				PathPlanPoint_R[f]=Q[f]+(R[f]-Q[f])*(t-25)/25;
 		}
 		else if(t<=75)
 		{
 			for(int f=0;f<3;f++)  
-				point[f]=R[f]+(S[f]-R[f])*(t-50)/25;
+				PathPlanPoint_R[f]=R[f]+(S[f]-R[f])*(t-50)/25;
 		}
 		else 
 		{
 			for(int f=0;f<3;f++)  
-				point[f]=S[f]+(O[f]-S[f])*(t-75)/15;
+				PathPlanPoint_R[f]=S[f]+(O[f]-S[f])*(t-75)/15;
 		}
 	
 		Sleep(100);
-		MoveToPoint(DEF_RIGHT_HAND,point,pose_deg,-90,vel_deg);
+
+		MoveToPoint(DEF_RIGHT_HAND,PathPlanPoint_R,vel_deg);
 		//DBGMSG(("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]))
-		printf("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]);
+		printf("PathPlanPoint_R%d=[%f,%f,%f]\n",t,PathPlanPoint_R[0],PathPlanPoint_R[1],PathPlanPoint_R[2]);
 	}
 
 	return 0;
@@ -175,12 +183,15 @@ int TestRectangle_LeftHand()
 	float R_L[3]={500,200,-200};
 	float S_L[3]={500,50 ,-200};
  
-	float Pend_L[3]={0,0,0};
-	float pose_deg_L[3]={-60,45,0};
-	float Rednt_alpha_L=90;
+	//float Pend_L[3]={0,0,0};
+	//float pose_deg_L[3]={-60,45,0};
+	//float Rednt_alpha_L=90;
+	float PathPlanPoint_L[7]={500,50,0,-60,45,0,90};
 	float vel_deg_L=13;
 	//move to initial point
-	MoveToPoint(DEF_LEFT_HAND,O_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);
+	MoveToPoint(DEF_LEFT_HAND,PathPlanPoint_L,vel_deg_L);
+	//MoveToPoint(DEF_LEFT_HAND,O_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);
+
 	Sleep(3000);
 
 
@@ -190,28 +201,28 @@ int TestRectangle_LeftHand()
 		if(t<=25)
 		{
 			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
-				Pend_L[f]=O_L[f]+(Q_L[f]-O_L[f])*t/25; 
+				PathPlanPoint_L[f]=O_L[f]+(Q_L[f]-O_L[f])*t/25; 
 		}
 		else if(t<=50)
 		{
 			for(int f=0;f<3;f++)  
-				Pend_L[f]=Q_L[f]+(R_L[f]-Q_L[f])*(t-25)/25;
+				PathPlanPoint_L[f]=Q_L[f]+(R_L[f]-Q_L[f])*(t-25)/25;
 		}
 		else if(t<=75)
 		{
 			for(int f=0;f<3;f++)  
-				Pend_L[f]=R_L[f]+(S_L[f]-R_L[f])*(t-50)/25;
+				PathPlanPoint_L[f]=R_L[f]+(S_L[f]-R_L[f])*(t-50)/25;
 		}
 		else 
 		{
 			for(int f=0;f<3;f++)  
-				Pend_L[f]=S_L[f]+(O_L[f]-S_L[f])*(t-75)/15;
+				PathPlanPoint_L[f]=S_L[f]+(O_L[f]-S_L[f])*(t-75)/15;
 		}
 	
 		Sleep(500);
-		MoveToPoint(DEF_LEFT_HAND,Pend_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);
+		MoveToPoint(DEF_LEFT_HAND,PathPlanPoint_L,vel_deg_L);
 		//DBGMSG(("point%d=[%f,%f,%f]\n",t,point[0],point[1],point[2]))
-		printf("Pend_L[%d]=[%f,%f,%f]\n",t,Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
+		printf("PathPlanPoint_L[%d]=[%f,%f,%f]\n",t,PathPlanPoint_L[DEF_X],PathPlanPoint_L[DEF_Y],PathPlanPoint_L[DEF_Z]);
 	}
 
 	return 0;
@@ -375,7 +386,7 @@ void ReleaseGripperLattePanda()
 
 
 
-
+/*
 void Record_LineMove_LeftHand()
 {
 	//==Move to 以左肩座標系的P1_L[500,-L0,0]
@@ -422,6 +433,8 @@ void Record_LineMove_LeftHand()
 	file.close();
 
 }
+*/
+
 void WaitMotionDone()
 {
 	int rt=0;
@@ -482,7 +495,7 @@ void WaitMotionDoneDual()
 	}
 	
 }
-
+/*
 int Rec_Rectangle_Dual()
 {
 	//float O_R[3]={400,-50 ,-100};
@@ -630,7 +643,7 @@ int Rec_Rectangle_Dual()
 	return 0;
 
 }
-
+*/
 int Get_Linear_fun_point(float t,float tk,float TotalTime,float *Seqt,float (*SeqPt)[3],float (*SeqVel)[3],float (*SeqAcc)[3],float *P_out)
 {
 	int Pseg=0;
@@ -730,7 +743,7 @@ int Get_Linear_fun_point(float t,float tk,float TotalTime,float *Seqt,float (*Se
 }
 
 
-	
+/*
 void Rec_Rectangle_Linear_function_Dual()
 {
 	const int RowSize=5;
@@ -970,7 +983,9 @@ void Rec_Rectangle_Linear_function_Dual()
 	fileR.close();
 	fileL.close();
 }
+*/
 
+/*
 void TestMoveAndCatch()
 {
 	//Move to intial
@@ -1003,6 +1018,7 @@ void TestMoveAndCatch()
 
 	
 }
+*/
 
 void TestStillMoving()
 {
@@ -1118,7 +1134,7 @@ void TestOneAxisInterpolation()
 }
 
 
-
+/*
 void TestGetDrink()
 {
 	//==路徑點
@@ -1587,7 +1603,8 @@ void TestGetDrink()
 	gfileL.close();
 #endif
 }
-
+*/
+	/*
 void MoveToSelectPoint()
 {
 	//==Robotic arm pose==//
@@ -1606,84 +1623,90 @@ void MoveToSelectPoint()
 		MoveToPoint(RL,Pend,pose_deg,Rednt_alpha,vel_deg);
 	}
 }
-
+*/
 
 enum{
 	S_INITIAL=0,
-	S_RL_HOLD_1,
-	S_RL_F_200,
-	S_R_REL_1,
-	S_R_X_B_200_S1,
-	S_R_HOLD_1,
-	S_R_X_CIRF_200_L_X_CIRB_200,
-	S_R_REL_2,
-	S_R_X_B_200_S2,
-	S_R_HOLD_2,
-	S_R_X_F_200_L_X_F_200,
+	S_R_HOLD_L_HOLD_1,
+	S_R_FX_L_FX,
+	S_R_KEEP_L_REL_1,
+	S_R_KEEP_L_FX,
+	S_R_KEEP_L_HOLD_1,
+	S_R_FCIRX_L_BCIRX,
+	S_R_REL_L_HOLD_1,
+	S_R_BX_L_KEEP_1,
 };
 void TestSewingAction()
 {
-	const int SegSize=11;
-	//==路徑點
-	float R_p[SegSize][3]={   
-		{300,	-10, 0},	//起始點
-		{300,	-10, 0},	//左右手夾緊1
-		{500,	-10, 0},	//右手往前200 %左手往前200
-		{500,	-10, 0},	//右手鬆開1
-		{300,	-10, 0},	//右手x往後退200 %左手不動
-		{300,	-10, 0},	//右手夾緊1
-		{500,	-10, 0},	//右手x 圓周往前200 %左手x圓周往後200
-		{500,	-10, 0},	//右手鬆開2
-		{300,	-10, 0},	//右手x往後200 %左手不動
-		{300,	-10, 0},	//右手夾緊2
-		{500,	-10, 0}};	//右手往前200 %左手往前200
-		
-	float L_p[SegSize][3]={  
-		{300, 90, 0},	//起始點
-		{300, 90, 0},	//左右手夾緊1
-		{500, 90, 0},	//右手往前200 %左手x往前200
-		{500, 90, 0},	//右手鬆開1
-		{500, 90, 0},	//右手x往後退200 %左手不動
-		{500, 90, 0},	//右手夾緊1
-		{300, 90, 0},	//右手x 圓周往前200 %左手x圓周往後200  
-		{300, 90, 0},	//右手鬆開2
-		{300, 90, 0},	//右手x往後200 %左手不動
-		{300, 90, 0},	//右手夾緊2
-		{500, 90, 0}};	//右手x往前200 %左手x往前200
+	const int SegSize=9;
 
-	float Cen_Path_R[3]={(500+300)*0.5,-10,0};
-	float rR = 500-Cen_Path_R[DEF_X];
-
-	float Cen_Path_L[3]={(500+300)*0.5,90,0};
-	float rL = 500-Cen_Path_L[DEF_X];
-		
 	//==各段花費時間==//
 	float SeqItv[SegSize]={0};//Sequence  invterval
 
 	SeqItv[S_INITIAL]=0;
-	SeqItv[S_RL_HOLD_1]=2;
-	SeqItv[S_RL_F_200]=5;
-	SeqItv[S_R_REL_1]=2;
-	SeqItv[S_R_X_B_200_S1]=10;
-	SeqItv[S_R_HOLD_1]=2;
-	SeqItv[S_R_X_CIRF_200_L_X_CIRB_200]=5;
-	SeqItv[S_R_REL_2]=2;
-	SeqItv[S_R_X_B_200_S2]=10;
-	SeqItv[S_R_HOLD_2]=2;
-	SeqItv[S_R_X_F_200_L_X_F_200]=5;
+	SeqItv[S_R_HOLD_L_HOLD_1]=2;
+	SeqItv[S_R_FX_L_FX]=5;
+	SeqItv[S_R_KEEP_L_REL_1]=2;
+	SeqItv[S_R_KEEP_L_FX]=5;
+	SeqItv[S_R_KEEP_L_HOLD_1]=2;
+	SeqItv[S_R_FCIRX_L_BCIRX]=5;
+	SeqItv[S_R_REL_L_HOLD_1]=2;
+	SeqItv[S_R_BX_L_KEEP_1]=10;
 
+	
 	//==絕對時間標計==//
 	float Seqt[SegSize]={0};
 	float CurT=0;
 
-	for(int i=0;i<SegSize;i++)
+	for(int i=0;i<SegSize;i++) 
 	{
 		CurT=CurT+SeqItv[i];
 		Seqt[i]=CurT;
 	}
 	float TotalTime=CurT;
 	
+
+	//==路徑點
+	float R_p[SegSize][7]={   
+		{210,	-360,	0,	50,	-90,	0,	-50},	//起始點
+		{210,	-360,	0,	50,	-90,	0,	-50},	//右手夾 左手夾
+		{350,	-360,	0,  50, -90,	0,	-50},	//右手往正X 140 左手往正X 140 
+		{350,	-360,	0,  50, -90,	0,	-50},	//右手不動 左手開1
+		{350,	-360,	0,  50, -90,	0,	-50},	//右手不動 左手往正X 180
+		{350,	-360,	0 , 50 ,-90,	0,	-50},	//右手不動 左手夾1
+		{390,	-360,	0,  50, -90,	0,	-50},	//右手旋轉往正X 左手旋轉往負X
+		{390,	-360,	0,  50, -90,	0,	-50},	//右手開 左手不動1
+		{210,	-360,	0,  50, -90,	0,	-50}};  //右手往X負  左手不動1 
 	
+		
+	float L_p[SegSize][7]={  
+		{210,-180,0,-90,90,0,90},	//起始點
+		{210,-180,0,-90,90,0,90},	//右手夾 左手夾
+		{350,-180,0,-70,90,0,90},	//右手往正X 140 左手往正X 140 
+		{350,-180,0,-70,90,0,90},	//右手不動 左手開1
+		{530,-180,0,-50,90,0,90},	//右手不動 左手往正X 180
+		{530,-180,0,-50,90,0,90},	//右手不動 左手夾1
+		{210,-180,-90,90,0,90},	//右手旋轉往正X 左手旋轉往負X
+		{210,-180,0,-90,90,0,90},	//右手開 左手不動1
+		{210,-180,0,-90,90,0,90}};	//右手往X負  左手不動1 
+	
+	//%針點位置 
+	float Needle_P[3]={370,-340,0};
+	//右手圓周路徑
+	float inip_R[3]={350,-360,0};
+	float rR=sqrt(pow((inip_R[DEF_X]-Needle_P[DEF_X]),2)+pow((inip_R[DEF_Y]-Needle_P[DEF_Y]),2));
+	float ini_rad_R=DEF_PI+atan((inip_R[DEF_Y]-Needle_P[DEF_Y])/(inip_R[DEF_X]-Needle_P[DEF_X]));//旋轉時的起始旋轉角度
+
+	//左手圓周路徑
+	float inip_L[3]={530,-180,0};
+	float rL=sqrt(pow((inip_L[DEF_X]-Needle_P[DEF_X]),2)+pow((inip_L[DEF_Y]-Needle_P[DEF_Y]),2));
+	float ini_rad_L=atan((inip_L[DEF_Y]-Needle_P[DEF_Y])/(inip_L[DEF_X]-Needle_P[DEF_X]));
+
+	float HoldLen_L[3]={180,0,0};//左手抓取點間距 左下點跟左上點的間距
+	float HoldLen_R[3]={180,0,0};//左手抓取點間距
+	
+	
+
 
 	//==流程需用變數
 	//float CycleT=0.1f;
@@ -1733,22 +1756,26 @@ void TestSewingAction()
 	int rt=0;
 	
 	//==Robotic arm pose==//
-	float Pend_R[3]={0,0,0};
-	float pose_deg_R[3]={70,-90,0};
-	float Rednt_alpha_R=-90;
+	const int POINT_DIMENTION=7; //[x,y,z,alpha,beta,gamma]
+	float PathPlanPoint_R[POINT_DIMENTION]={0};
+	float PathPlanPoint_L[POINT_DIMENTION]={0};
+	//float Pend_R[3]={0,0,0};
+	//float pose_deg_R[3]={50,-90,0};
+	//float Rednt_alpha_R=-50;
 	float vel_deg_R=10;
 
-	float Pend_L[3]={0,0,0};
-	float pose_deg_L[3]={-60,90,0};
-	float Rednt_alpha_L=90;
+	//float Pend_L[3]={0,0,0};
+	//float pose_deg_L[3]={-90,90,0};
+	//float Rednt_alpha_L=90;
 	float vel_deg_L=10;
+
 	//=========================//
 	//==move to initial point==//
 	//=========================//
 #ifdef	MOVE_TO_INITIAL_POINT
 	//MoveToPoint_Dual(R_p[0],pose_deg_R,Rednt_alpha_R,vel_deg_R,L_p[0],pose_deg_L,Rednt_alpha_L,vel_deg_L);  //20ms
-	MoveToPoint(DEF_RIGHT_HAND,R_p[0],pose_deg_R,Rednt_alpha_R,vel_deg_R);
-	MoveToPoint(DEF_LEFT_HAND,L_p[0],pose_deg_L,Rednt_alpha_L,vel_deg_L);
+	MoveToPoint(DEF_RIGHT_HAND,R_p[0],vel_deg_R);
+	MoveToPoint(DEF_LEFT_HAND,L_p[0],vel_deg_L);
 	printf("move to p0..\n");
 	WaitMotionDoneDual();
 	
@@ -1772,10 +1799,10 @@ void TestSewingAction()
 	{
 		QueryPerformanceCounter(&nBeginTime); //Record cycle start time
 
-		if(abst<=Seqt[S_RL_HOLD_1])//左右手夾緊
+		if(abst<=Seqt[S_R_HOLD_L_HOLD_1])//右手夾 左手夾Seqt
 		{
-			Itv=SeqItv[S_RL_HOLD_1];
-			t=abst-Seqt[S_INITIAL];
+			Itv=SeqItv[S_R_HOLD_L_HOLD_1];
+			t=abst-Seqt[S_R_HOLD_L_HOLD_1-1];
 
 			if(GripperAlreadyAct==0)
 			{
@@ -1790,29 +1817,29 @@ void TestSewingAction()
 				GripperAlreadyAct=1; 
 			}	
 
-			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
+			for(int f=0;f<POINT_DIMENTION;f++)   //對xyz,alpha,beta,gamma,redant_aplaha 座標分別運算 
 			{
-				Pend_R[f]=R_p[S_INITIAL][f]; 
-				Pend_L[f]=L_p[S_INITIAL][f]; 
+				PathPlanPoint_R[f]=R_p[S_R_HOLD_L_HOLD_1][f]; 
+				PathPlanPoint_L[f]=L_p[S_R_HOLD_L_HOLD_1][f]; 
 			}
 		}
-		else if(abst<=Seqt[S_RL_F_200])//右手往前200 %左手往前200
+		else if(abst<=Seqt[S_R_FX_L_FX])//右手往正X 140 左手往正X 140 
 		{	
 			GripperAlreadyAct=0; //clear the gripper status of last segemnt
 
-			Itv=SeqItv[S_RL_F_200];
-			t=abst-Seqt[S_RL_HOLD_1];
+			Itv=SeqItv[S_R_FX_L_FX];
+			t=abst-Seqt[S_R_FX_L_FX-1];
 
-			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
+			for(int f=0;f<POINT_DIMENTION;f++) 
 			{
-				Pend_R[f]=R_p[S_RL_HOLD_1][f]+(R_p[S_R_REL_1][f]-R_p[S_RL_HOLD_1][f])*t/Itv; 
-				Pend_L[f]=L_p[S_RL_HOLD_1][f]+(L_p[S_R_REL_1][f]-L_p[S_RL_HOLD_1][f])*t/Itv;
+				PathPlanPoint_R[f]=R_p[S_R_FX_L_FX-1][f]+(R_p[S_R_FX_L_FX][f]-R_p[S_R_FX_L_FX-1][f])*t/Itv; 
+				PathPlanPoint_L[f]=L_p[S_R_FX_L_FX-1][f]+(L_p[S_R_FX_L_FX][f]-L_p[S_R_FX_L_FX-1][f])*t/Itv;
 			}
 		}
-		else if(abst<=Seqt[S_R_REL_1])//右手鬆開1
+		else if(abst<=Seqt[S_R_KEEP_L_REL_1])//右手不動 左手開1
 		{		
-			Itv=SeqItv[S_R_REL_1];
-			t=abst-Seqt[S_RL_F_200];
+			Itv=SeqItv[S_R_KEEP_L_REL_1];
+			t=abst-Seqt[S_R_KEEP_L_REL_1-1];
 
 			if(GripperAlreadyAct==0)
 			{
@@ -1821,34 +1848,34 @@ void TestSewingAction()
 				getchar();
 #endif
 #ifdef GRIPPER_ON_LATTE
-				Gripper_LattePanda_Hold(DEF_RIGHT_HAND,false,1200);
+				Gripper_LattePanda_Hold(DEF_LEFT_HAND,false,1200);
 #endif
 				GripperAlreadyAct=1; 
 			}	
 
-			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
+			for(int f=0;f<POINT_DIMENTION;f++)  
 			{
-				Pend_R[f]=R_p[S_R_REL_1][f]; 
-				Pend_L[f]=L_p[S_R_REL_1][f]; 
+				PathPlanPoint_R[f]=R_p[S_R_KEEP_L_REL_1][f]; 
+				PathPlanPoint_L[f]=L_p[S_R_KEEP_L_REL_1][f]; 
 			}
 		}
-		else if(abst<=Seqt[S_R_X_B_200_S1])//右手x往後退200 %左手不動
+		else if(abst<=Seqt[S_R_KEEP_L_FX])//右手不動 左手往正X 180
 		{
 			GripperAlreadyAct=0;
 
-			Itv=SeqItv[S_R_X_B_200_S1];
-			t=abst-Seqt[S_R_REL_1];
+			Itv=SeqItv[S_R_KEEP_L_FX];
+			t=abst-Seqt[S_R_KEEP_L_FX-1];
 
-			for(int f=0;f<3;f++)   
+			for(int f=0;f<POINT_DIMENTION;f++)   
 			{
-				Pend_R[f]=R_p[S_R_REL_1][f]+(R_p[S_R_X_B_200_S1][f]-R_p[S_R_REL_1][f])*t/Itv; 
-				Pend_L[f]=L_p[S_R_REL_1][f]; 
+				PathPlanPoint_R[f]=R_p[S_R_KEEP_L_FX-1][f]+(R_p[S_R_KEEP_L_FX][f]-R_p[S_R_KEEP_L_FX-1][f])*t/Itv; 
+				PathPlanPoint_L[f]=L_p[S_R_KEEP_L_FX-1][f]+(L_p[S_R_KEEP_L_FX][f]-L_p[S_R_KEEP_L_FX-1][f])*t/Itv;
 			}		
 		}
-		else if(abst<=Seqt[S_R_HOLD_1])//右手夾緊1
+		else if(abst<=Seqt[S_R_KEEP_L_HOLD_1])//右手不動 左手夾1   
 		{
-			Itv=SeqItv[S_R_HOLD_1];
-			t=abst-Seqt[S_R_X_B_200_S1];
+			Itv=SeqItv[S_R_KEEP_L_HOLD_1];
+			t=abst-Seqt[S_R_KEEP_L_HOLD_1-1];
 
 			if(GripperAlreadyAct==0)
 			{
@@ -1857,39 +1884,43 @@ void TestSewingAction()
 				getchar();
 #endif
 #ifdef GRIPPER_ON_LATTE
-				Gripper_LattePanda_Hold(DEF_RIGHT_HAND,true,1200);
+				Gripper_LattePanda_Hold(DEF_LEFT_HAND,true,1200);
 #endif
 				GripperAlreadyAct=1; 
 			}	
 
-			for(int f=0;f<3;f++)   //對xyz座標分別運算 f=x,y,z
+			for(int f=0;f<POINT_DIMENTION;f++)   
 			{
-				Pend_R[f]=R_p[S_R_X_B_200_S1][f]; 
-				Pend_L[f]=L_p[S_R_X_B_200_S1][f]; 
+				PathPlanPoint_R[f]=R_p[S_R_KEEP_L_HOLD_1][f]; 
+				PathPlanPoint_L[f]=L_p[S_R_KEEP_L_HOLD_1][f]; 
 			}
 		}
-		else if(abst<=Seqt[S_R_X_CIRF_200_L_X_CIRB_200])//右手x 圓周往前200 %左手x圓周往後200
+		else if(abst<=Seqt[S_R_FCIRX_L_BCIRX])//右手旋轉往正X 左手旋轉往負X
 		{
 			GripperAlreadyAct=0;
 
-			Itv=SeqItv[S_R_X_CIRF_200_L_X_CIRB_200];
-			t=abst-Seqt[S_R_HOLD_1];
+			Itv=SeqItv[S_R_FCIRX_L_BCIRX];
+			t=abst-Seqt[S_R_FCIRX_L_BCIRX-1];
 
-			for(int f=0;f<3;f++)  
-			{
-				Pend_R[DEF_X]=Cen_Path_R[DEF_X]+rR*(cos(DEF_PI*t/Itv + DEF_PI)); 
-				Pend_R[DEF_Y]=Cen_Path_R[DEF_Y]+rR*(sin(DEF_PI*t/Itv + DEF_PI)); 
-				Pend_R[DEF_Z]=Cen_Path_R[DEF_Z];
+		
+			PathPlanPoint_R[DEF_X]=Needle_P[DEF_X]+(float)(rR*(cos(0.5*DEF_PI*t/Itv + ini_rad_R))); 
+			PathPlanPoint_R[DEF_Y]=Needle_P[DEF_Y]+(float)(rR*(sin(0.5*DEF_PI*t/Itv + ini_rad_R))); 
+			PathPlanPoint_R[DEF_Z]=Needle_P[DEF_Z];
+			PathPlanPoint_R[DEF_ALPHA]=R_p[S_R_FCIRX_L_BCIRX-1][DEF_ALPHA]+(R_p[S_R_FCIRX_L_BCIRX][DEF_ALPHA]-R_p[S_R_FCIRX_L_BCIRX-1][DEF_ALPHA])*t/Itv; 
+			PathPlanPoint_R[DEF_BETA]=R_p[S_R_FCIRX_L_BCIRX-1][DEF_BETA]+(R_p[S_R_FCIRX_L_BCIRX][DEF_BETA]-R_p[S_R_FCIRX_L_BCIRX-1][DEF_BETA])*t/Itv;
+			PathPlanPoint_R[DEF_GAMMA]=R_p[S_R_FCIRX_L_BCIRX-1][DEF_GAMMA]+(R_p[S_R_FCIRX_L_BCIRX][DEF_GAMMA]-R_p[S_R_FCIRX_L_BCIRX-1][DEF_GAMMA])*t/Itv;
 
-				Pend_L[DEF_X]=Cen_Path_L[DEF_X]+rL*(cos(DEF_PI*t/Itv)); 
-				Pend_L[DEF_Y]=Cen_Path_L[DEF_Y]+rL*(sin(DEF_PI*t/Itv)); 
-				Pend_L[DEF_Z]=Cen_Path_L[DEF_Z];
-			}		
+			PathPlanPoint_L[DEF_X]=Needle_P[DEF_X]+(float)(rL*(cos(0.5*DEF_PI*t/Itv + ini_rad_L))); 
+			PathPlanPoint_L[DEF_Y]=Needle_P[DEF_Y]+(float)(rL*(sin(0.5*DEF_PI*t/Itv + ini_rad_L))); 
+			PathPlanPoint_L[DEF_ALPHA]=L_p[S_R_FCIRX_L_BCIRX-1][DEF_ALPHA]+(L_p[S_R_FCIRX_L_BCIRX][DEF_ALPHA]-L_p[S_R_FCIRX_L_BCIRX-1][DEF_ALPHA])*t/Itv; 
+			PathPlanPoint_L[DEF_BETA]=L_p[S_R_FCIRX_L_BCIRX-1][DEF_BETA]+(L_p[S_R_FCIRX_L_BCIRX][DEF_BETA]-L_p[S_R_FCIRX_L_BCIRX-1][DEF_BETA])*t/Itv;
+			PathPlanPoint_L[DEF_GAMMA]=L_p[S_R_FCIRX_L_BCIRX-1][DEF_GAMMA]+(L_p[S_R_FCIRX_L_BCIRX][DEF_GAMMA]-L_p[S_R_FCIRX_L_BCIRX-1][DEF_GAMMA])*t/Itv;
+	
 		}
-		else if(abst<=Seqt[S_R_REL_2])//右手鬆開2
+		else if(abst<=Seqt[S_R_REL_L_HOLD_1])//右手開 左手不動1
 		{
-			Itv=SeqItv[S_R_REL_2];
-			t=abst-Seqt[S_R_X_CIRF_200_L_X_CIRB_200];
+			Itv=SeqItv[S_R_REL_L_HOLD_1];
+			t=abst-Seqt[S_R_REL_L_HOLD_1-1];
 			
 			if(GripperAlreadyAct==0)
 			{
@@ -1903,62 +1934,28 @@ void TestSewingAction()
 				GripperAlreadyAct=1; 
 			}	
 
-			for(int f=0;f<3;f++)  
+			for(int f=0;f<POINT_DIMENTION;f++)  
 			{
-				Pend_R[f]=R_p[S_R_X_CIRF_200_L_X_CIRB_200][f];							
-				Pend_L[f]=L_p[S_R_X_CIRF_200_L_X_CIRB_200][f];
+				PathPlanPoint_R[f]=R_p[S_R_REL_L_HOLD_1][f];							
+				PathPlanPoint_L[f]=L_p[S_R_REL_L_HOLD_1][f];
 			}	
 		}
-		else if(abst<=Seqt[S_R_X_B_200_S2])//右手x往後200 %左手不動
+		else if(abst<=Seqt[S_R_BX_L_KEEP_1])//右手往X負  左手不動1 
 		{
 			GripperAlreadyAct=0;
 
-			Itv=SeqItv[S_R_X_B_200_S2];
-			t=abst-Seqt[S_R_REL_2];
+			Itv=SeqItv[S_R_BX_L_KEEP_1];
+			t=abst-Seqt[S_R_BX_L_KEEP_1-1];
 
 
-			for(int f=0;f<3;f++)  
+			for(int f=0;f<POINT_DIMENTION;f++)  
 			{
-				Pend_R[f]=R_p[S_R_REL_2][f]+(R_p[S_R_X_B_200_S2][f]-R_p[S_R_REL_2][f])*t/Itv;
-				Pend_L[f]=L_p[S_R_REL_2][f]+(L_p[S_R_X_B_200_S2][f]-L_p[S_R_REL_2][f])*t/Itv;
+				PathPlanPoint_R[f]=R_p[S_R_BX_L_KEEP_1-1][f]+(R_p[S_R_BX_L_KEEP_1][f]-R_p[S_R_BX_L_KEEP_1-1][f])*t/Itv;
+				PathPlanPoint_L[f]=L_p[S_R_BX_L_KEEP_1-1][f]+(L_p[S_R_BX_L_KEEP_1][f]-L_p[S_R_BX_L_KEEP_1-1][f])*t/Itv;
 			}	
 		}
-		else if(abst<=Seqt[S_R_HOLD_2])//%右手夾緊2
-		{
-			Itv=SeqItv[S_R_HOLD_2];
-			t=abst-Seqt[S_R_X_B_200_S2];
-			
-			if(GripperAlreadyAct==0)
-			{
-				printf("press any key to continue...\n");
-#ifdef	DEF_WAIT_ENTER
-				getchar();
-#endif
-#ifdef GRIPPER_ON_LATTE
-				Gripper_LattePanda_Hold(DEF_RIGHT_HAND,true,1200);
-#endif
-				GripperAlreadyAct=1; 
-			}	
-
-			for(int f=0;f<3;f++)  
-			{
-				Pend_R[f]=R_p[S_R_X_B_200_S2][f];//右手固定
-				Pend_L[f]=L_p[S_R_X_B_200_S2][f];
-			}	
-		}
-		else if(abst<=Seqt[S_R_X_F_200_L_X_F_200])//%右手x往前200 %左手x往前200
-		{
-			GripperAlreadyAct=0;
-
-			Itv=SeqItv[S_R_X_F_200_L_X_F_200];
-			t=abst-Seqt[S_R_HOLD_2];
-
-			for(int f=0;f<3;f++)  
-			{
-				Pend_R[f]=R_p[S_R_HOLD_2][f]+(R_p[S_R_X_F_200_L_X_F_200][f]-R_p[S_R_HOLD_2][f])*t/Itv;
-				Pend_L[f]=L_p[S_R_HOLD_2][f]+(L_p[S_R_X_F_200_L_X_F_200][f]-L_p[S_R_HOLD_2][f])*t/Itv;
-			}	
-		}
+		
+		
 
 		vel_deg_R=30;
 		vel_deg_L=30;
@@ -1970,17 +1967,17 @@ void TestSewingAction()
 
 
 #ifdef MOVETOPOINT_DUAL
-		MoveToPoint_Dual(Pend_R,pose_deg_R,Rednt_alpha_R,vel_deg_R,Pend_L,pose_deg_L,Rednt_alpha_L,vel_deg_L);  //使用原本matrix大約20ms    改為opencv matri後平均2.5ms 因此cycle time想抓10ms  
+		MoveToPoint_Dual(PathPlanPoint_R,vel_deg_R,PathPlanPoint_L,vel_deg_L);  //使用原本matrix大約20ms    改為opencv matri後平均2.5ms 因此cycle time想抓10ms  
 #endif
-		printf("Pend_R=[%4.1f,%4.1f,%4.1f],Pend_L=[%4.1f,%4.1f,%4.1f]\n",Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z],Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
+		printf("Pend_R=[%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f],Pend_L=[%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f]\n",PathPlanPoint_R[DEF_X],PathPlanPoint_R[DEF_Y],PathPlanPoint_R[DEF_Z],PathPlanPoint_R[DEF_ALPHA],PathPlanPoint_R[DEF_BETA],PathPlanPoint_R[DEF_GAMMA],PathPlanPoint_R[DEF_REDNT_ALPHA],PathPlanPoint_L[DEF_X],PathPlanPoint_L[DEF_Y],PathPlanPoint_L[DEF_Z],PathPlanPoint_L[DEF_ALPHA],PathPlanPoint_L[DEF_BETA],PathPlanPoint_L[DEF_GAMMA],PathPlanPoint_L[DEF_REDNT_ALPHA]);
 
 		//==確認軌跡點==//
 #ifdef CHECK_CARTESIAN_PATH
 		char buffer[100];
-		n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f\n",abst,Pend_R[DEF_X],Pend_R[DEF_Y],Pend_R[DEF_Z]);
+		n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f\n",abst,PathPlanPoint_R[DEF_X],PathPlanPoint_R[DEF_Y],PathPlanPoint_R[DEF_Z]);
 		fileR.write(buffer,n);
 
-		n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f\n",abst,Pend_L[DEF_X],Pend_L[DEF_Y],Pend_L[DEF_Z]);
+		n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f\n",abst,PathPlanPoint_L[DEF_X],PathPlanPoint_L[DEF_Y],PathPlanPoint_L[DEF_Z]);
 		fileL.write(buffer,n);
 #endif 
 
@@ -2083,8 +2080,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//====================//
 	//===initial gripper==//
 	//====================//
-	//printf("Gripper_LattePanda_Initial...\n");
-	//Gripper_LattePanda_Initial();
+	printf("Gripper_LattePanda_Initial...\n");
+	Gripper_LattePanda_Initial();
 
 
 	//====================//
@@ -2143,7 +2140,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//Sleep(1500);
 
 	DXL_Terminate_x86();
-	//Gripper_LattePanda_Close();
+	Gripper_LattePanda_Close();
 	
 	return 0;
 }
