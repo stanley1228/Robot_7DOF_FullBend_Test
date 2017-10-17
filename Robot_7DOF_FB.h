@@ -32,9 +32,10 @@ using namespace cv;
 #define DEF_Y 1
 #define DEF_Z 2
 
-#define DEF_ALPHA 0
-#define DEF_BETA 1
-#define DEF_GAMMA 2
+#define DEF_ALPHA 3
+#define DEF_BETA 4
+#define DEF_GAMMA 5
+#define DEF_REDNT_ALPHA 6
 //===========================
 //==Axis index,ID,NO mapping
 //==========================
@@ -462,8 +463,8 @@ Mat Rogridues(float theta,Mat V_A);
 int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_base,const float y_base,const float z_base,const float x_end,const float y_end,const float z_end,const float alpha,const float beta,const float gamma,const float Rednt_alpha,float* theta);
 int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const float Pend[3],const float PoseAngle[3],const float Rednt_alpha,float* out_theta);
 bool AngleOverConstrain(int RLHand,const float theta[MAX_AXIS_NUM],int *OverIndex);
-int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_deg,float vel_deg);
-int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R,float vel_deg_R,float Pend_L[3],float Pose_deg_L[3],float Rednt_alpha_deg_L,float vel_deg_L);  //莱赣璶Τ硉把计
+int MoveToPoint(int RLHand,float Point[7],float vel_deg); //Point[x,y,z,alpha,beta,gamma,redant_alpha]
+int MoveToPoint_Dual(float Point_R[7],float vel_deg_R,float Point_L[7],float vel_deg_L);  //莱赣璶Τ硉把计
 int IsMoving(int RLHand,bool *stillmoving);
 void QPDelay_ms(int t_ms);
 
