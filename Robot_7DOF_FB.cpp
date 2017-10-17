@@ -1507,13 +1507,13 @@ bool AngleOverConstrain(int RLHand, const float theta[MAX_AXIS_NUM],int *OverInd
 }
 
 
-int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_deg,float vel_deg) 
+int MoveToPoint(int RLHand,float Point[7],float vel_deg)  //point[x,y,z,alpha,beta,gamma,redant_alpha]
 {
 	const float linkL[6]={L0,L1,L2,L3,L4,L5};
 	float base[3]={0.0};
-	//float Pend[3]={x,y,z};
-	float Pose_rad[3]={Pose_deg[DEF_ALPHA]*DEF_RATIO_DEG_TO_RAD,Pose_deg[DEF_BETA]*DEF_RATIO_DEG_TO_RAD,Pose_deg[DEF_GAMMA]*DEF_RATIO_DEG_TO_RAD};
-	float Rednt_alpha=redant_alpha_deg*DEF_RATIO_DEG_TO_RAD;
+	float Pend[3]={Point[DEF_X],Point[DEF_Y],Point[DEF_Z]};
+	float Pose_rad[3]={Point[DEF_ALPHA]*DEF_RATIO_DEG_TO_RAD,Point[DEF_BETA]*DEF_RATIO_DEG_TO_RAD,Point[DEF_GAMMA]*DEF_RATIO_DEG_TO_RAD};
+	float Rednt_alpha=Point[DEF_REDNT_ALPHA]*DEF_RATIO_DEG_TO_RAD;
 	float theta[7]={0};
 	int vel_pus=(int)(vel_deg*DEF_RATIO_VEL_DEG_TO_PUS);
 	int rt=0;
@@ -1587,17 +1587,19 @@ int MoveToPoint(int RLHand,float Pend[3],float Pose_deg[3],float redant_alpha_de
 extern fstream gfileR;
 extern fstream gfileL;
 #endif
-int MoveToPoint_Dual(float Pend_R[3],float Pose_deg_R[3],float Rednt_alpha_deg_R,float vel_deg_R,float Pend_L[3],float Pose_deg_L[3],float Rednt_alpha_deg_L,float vel_deg_L)
+int MoveToPoint_Dual(float Point_R[7],float vel_deg_R,float Point_L[7],float vel_deg_L)
 {
 	const float linkL[6]={L0,L1,L2,L3,L4,L5};
 	float base_R[3]={0,-L0,0};
 	float base_L[3]={0,L0,0};
 
-	float Pose_rad_R[3]={Pose_deg_R[DEF_ALPHA]*DEF_RATIO_DEG_TO_RAD,Pose_deg_R[DEF_BETA]*DEF_RATIO_DEG_TO_RAD,Pose_deg_R[DEF_GAMMA]*DEF_RATIO_DEG_TO_RAD};
-	float Pose_rad_L[3]={Pose_deg_L[DEF_ALPHA]*DEF_RATIO_DEG_TO_RAD,Pose_deg_L[DEF_BETA]*DEF_RATIO_DEG_TO_RAD,Pose_deg_L[DEF_GAMMA]*DEF_RATIO_DEG_TO_RAD};
+	float Pend_R[3]={Point_R[DEF_X],Point_R[DEF_Y],Point_R[DEF_Z]};
+	float Pend_L[3]={Point_L[DEF_X],Point_L[DEF_Y],Point_L[DEF_Z]};
+	float Pose_rad_R[3]={Point_R[DEF_ALPHA]*DEF_RATIO_DEG_TO_RAD,Point_R[DEF_BETA]*DEF_RATIO_DEG_TO_RAD,Point_R[DEF_GAMMA]*DEF_RATIO_DEG_TO_RAD};
+	float Pose_rad_L[3]={Point_L[DEF_ALPHA]*DEF_RATIO_DEG_TO_RAD,Point_L[DEF_BETA]*DEF_RATIO_DEG_TO_RAD,Point_L[DEF_GAMMA]*DEF_RATIO_DEG_TO_RAD};
 
-	float Rednt_alpha_rad_R=Rednt_alpha_deg_R*DEF_RATIO_DEG_TO_RAD;
-	float Rednt_alpha_rad_L=Rednt_alpha_deg_L*DEF_RATIO_DEG_TO_RAD;
+	float Rednt_alpha_rad_R=Point_R[DEF_REDNT_ALPHA]*DEF_RATIO_DEG_TO_RAD;
+	float Rednt_alpha_rad_L=Point_L[DEF_REDNT_ALPHA]*DEF_RATIO_DEG_TO_RAD;
 
 	float theta_R[7]={0};
 	float theta_L[7]={0};
@@ -1785,8 +1787,8 @@ int setPosition_x86(int ServoID, int Position, int Speed)//stanley
 int DXL_Initial_x86()
 {
 	int rt=0;
-	//const int default_portnum=6;//latte_panda
-	const int default_portnum=5;//my pc
+	const int default_portnum=6;//latte_panda
+	//const int default_portnum=5;//my pc
 	const int default_baudnum=1;
 
 	printf("DXL_port=%d\n",default_portnum);
