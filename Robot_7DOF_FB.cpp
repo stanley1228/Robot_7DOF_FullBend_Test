@@ -1581,7 +1581,7 @@ int MoveToPoint(int RLHand,float Point[7],float vel_deg)  //point[x,y,z,alpha,be
 	return 0;
 }
 
-//#define CHECK_JOINT_PATH
+#define CHECK_JOINT_PATH
 #ifdef	CHECK_JOINT_PATH
 #include<fstream>
 extern fstream gfileR;
