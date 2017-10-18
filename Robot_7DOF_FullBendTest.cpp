@@ -16,10 +16,10 @@ using namespace std;
 #define DEF_DESCRETE_POINT 1000
 
 
-//#define CHECK_CARTESIAN_PATH 
-#define GRIPPER_ON_LATTE
+#define CHECK_CARTESIAN_PATH 
+//#define GRIPPER_ON_LATTE
 #define MOVETOPOINT_DUAL
-//#define CHECK_JOINT_PATH   //MoveToPoint_Dual函式 那邊也要def
+#define CHECK_JOINT_PATH   //MoveToPoint_Dual函式 那邊也要def
 #define MOVE_TO_INITIAL_POINT
 //#define RECORD_JOINT_ANGLE
 //#define DEF_WAIT_ENTER
@@ -1686,7 +1686,7 @@ void TestSewingAction()
 		{350,-180,0,-70,90,0,90},	//右手不動 左手開1
 		{530,-180,0,-50,90,0,90},	//右手不動 左手往正X 180
 		{530,-180,0,-50,90,0,90},	//右手不動 左手夾1
-		{210,-180,-90,90,0,90},	//右手旋轉往正X 左手旋轉往負X
+		{210,-180,0,-90,90,0,90},	//右手旋轉往正X 左手旋轉往負X
 		{210,-180,0,-90,90,0,90},	//右手開 左手不動1
 		{210,-180,0,-90,90,0,90}};	//右手往X負  左手不動1 
 	
@@ -1742,8 +1742,8 @@ void TestSewingAction()
 #endif
 
 #ifdef	CHECK_JOINT_PATH
-	gfileR.open("D://IK_CMD_R.csv",ios::out|ios::trunc);
-	gfileL.open("D://IK_CMD_L.csv",ios::out|ios::trunc);
+	gfileR.open("D://SewJoint_CMD_R.csv",ios::out|ios::trunc);
+	gfileL.open("D://SewJoint_CMD_L.csv",ios::out|ios::trunc);
 #endif
 	
 	
@@ -2067,21 +2067,21 @@ int _tmain(int argc, _TCHAR* argv[])
 	//=================//
 	//===initial DXL===//
 	//=================//
-	int rt=DXL_Initial_x86();
-	if(rt==0)
-	{
-		printf("DXL_Initial_x86 failed\n");
-		getchar();
-		return 0;
-	}
+	//int rt=DXL_Initial_x86();
+	//if(rt==0)
+	//{
+	//	printf("DXL_Initial_x86 failed\n");
+	//	getchar();
+	//	return 0;
+	//}
 
 
 
 	//====================//
 	//===initial gripper==//
 	//====================//
-	printf("Gripper_LattePanda_Initial...\n");
-	Gripper_LattePanda_Initial();
+	//printf("Gripper_LattePanda_Initial...\n");
+	//Gripper_LattePanda_Initial();
 
 
 	//====================//
@@ -2109,13 +2109,13 @@ int _tmain(int argc, _TCHAR* argv[])
 	//================//
 	//==TestSewing==//
 	//================//
-	PID_Setting_Dual();
-	printf("SewingAction...\n");
+	//PID_Setting_Dual();
+	//printf("SewingAction...\n");
 	TestSewingAction();
-	printf("Enter any key to go home...\n");
-	getchar();
-	printf("MoveToHome...\n");
-	TestMoveToHome_Dual();
+	//printf("Enter any key to go home...\n");
+	//getchar();
+	//printf("MoveToHome...\n");
+	//TestMoveToHome_Dual();
 
 	//Test Move And Catch
 	//TestMoveAndCatch();
@@ -2139,8 +2139,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	//Sleep(1500);
 
-	DXL_Terminate_x86();
-	Gripper_LattePanda_Close();
+	//DXL_Terminate_x86();
+	//Gripper_LattePanda_Close();
 	
 	return 0;
 }
