@@ -214,7 +214,7 @@ enum{
 //left
 #define AXISL1_ROBOT_LIM_DEG_L (-170)
 #define AXISL1_ROBOT_LIM_DEG_H 80
-#define AXISL2_ROBOT_LIM_DEG_L (-10)
+#define AXISL2_ROBOT_LIM_DEG_L (-11)
 #define AXISL2_ROBOT_LIM_DEG_H 180
 #define AXISL3_ROBOT_LIM_DEG_L (-170)
 #define AXISL3_ROBOT_LIM_DEG_H 105
@@ -432,7 +432,7 @@ static const float grobot_lim_pus_L_High[MAX_AXIS_NUM]=
 #define L2 25   	//L-type linker short side
 #define L3 25     	//L-type linker short side
 #define L4 230     	//L-type linker long side
-#define L5 180     	//length from wrist to end effector
+#define L5 210     	//length from wrist to end effector
 #define X_BASE 0  	//基準點只能都先設0
 #define Y_BASE 0
 #define Z_BASE 0
