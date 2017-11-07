@@ -36,6 +36,7 @@ using namespace cv;
 #define DEF_BETA 4
 #define DEF_GAMMA 5
 #define DEF_REDNT_ALPHA 6
+#define DEF_ACT_TYPE 7
 //===========================
 //==Axis index,ID,NO mapping
 //==========================
@@ -486,3 +487,18 @@ int Gripper_LattePanda_Initial();
 void Gripper_LattePanda_Close();
 int Gripper_LattePanda_Hold(int RLHand,bool Hold,int delay_ms);
 #endif    /* ROBOT_7DOF_FB__H */
+
+
+//F446RE IO
+#define DEF_CLOCK_WISE          true
+#define DEF_COUNTER_CLOCK_WISE  false
+
+int F446RE_Initial();
+void F446RE_Close();
+void F446RE_RotateMotor(bool dir,int deg);
+void F446RE_Gripper_Hold(int RLHand,bool Hold,int delay_ms);
+void F446RE_FootLifter(bool sw);
+void F446RE_Spindle(bool sw);
+void F446RE_Trimmer(bool sw);
+
+
