@@ -1581,7 +1581,7 @@ int MoveToPoint(int RLHand,float Point[7],float vel_deg)  //point[x,y,z,alpha,be
 	return 0;
 }
 
-#define CHECK_JOINT_PATH
+//#define CHECK_JOINT_PATH
 #ifdef	CHECK_JOINT_PATH
 #include<fstream>
 extern fstream gfileR;
@@ -2004,3 +2004,88 @@ int Gripper_LattePanda_Hold(int RLHand,bool Hold,int delay_ms)
 	return 0;
 }
 
+
+//=========================================
+//==RoboticIO
+//=========================================
+using namespace RoboticArmIO;
+#using "RoboticArmIO.dll"
+#pragma warning (disable: 4538)
+
+ref class F446REObj
+{
+public:
+	static RobotIO ^robotio=nullptr;
+
+	static int Initial()
+	{
+		robotio = gcnew RobotIO();
+		robotio->initial();
+		return 0;
+	}
+	static int Close()
+	{
+		robotio->close();
+		return 0;
+	}
+	static bool RotateMotor(bool dir,int deg) 
+	{
+		return robotio->RotateMotor(dir,deg);
+	}
+	static void Gripper_Hold(int RLHand,bool Hold,int delay_ms)
+	{
+		robotio->Gripper_Hold(RLHand,Hold,delay_ms);
+	}
+
+	static void FootLifter(bool sw)
+    {
+       robotio->FootLifter(sw);
+    }
+
+    static void Spindle(bool sw)
+    {
+         robotio->Spindle(sw);
+    }
+
+	 static void Trimmer(bool sw)
+    {
+         robotio->Trimmer(sw);
+    }
+};
+
+
+int F446RE_Initial()
+{
+	 F446REObj::Initial();
+	 return 0;
+}
+
+void F446RE_Close()
+{
+	 F446REObj::Close();
+}
+
+void F446RE_RotateMotor(bool dir,int deg)
+{
+	 F446REObj::RotateMotor(dir,deg);
+}
+
+void F446RE_Gripper_Hold(int RLHand,bool Hold,int delay_ms)
+{
+	 F446REObj::Gripper_Hold(RLHand,Hold,delay_ms);
+}
+
+void F446RE_FootLifter(bool sw)
+{
+	F446REObj::FootLifter(sw);
+}
+
+void F446RE_Spindle(bool sw)
+{
+	F446REObj::Spindle(sw);
+}
+
+void F446RE_Trimmer(bool sw)
+{
+	F446REObj::Trimmer(sw);
+}
