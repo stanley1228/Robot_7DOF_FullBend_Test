@@ -180,7 +180,7 @@ enum{
 //=====================================
 //==robot to Motor offset==//  //robot pos=motor position -M2R_OFFSET
 //right
-#define AXISR1_R2M_OFFSET_DEG 180
+#define AXISR1_R2M_OFFSET_DEG 90
 #define AXISR2_R2M_OFFSET_DEG 270
 #define AXISR3_R2M_OFFSET_DEG 180
 #define AXISR4_R2M_OFFSET_DEG 180
@@ -188,7 +188,7 @@ enum{
 #define AXISR6_R2M_OFFSET_DEG 180
 #define AXISR7_R2M_OFFSET_DEG 180
 //left
-#define AXISL1_R2M_OFFSET_DEG 180
+#define AXISL1_R2M_OFFSET_DEG 270
 #define AXISL2_R2M_OFFSET_DEG 90
 #define AXISL3_R2M_OFFSET_DEG 180
 #define AXISL4_R2M_OFFSET_DEG 180
@@ -428,12 +428,12 @@ static const float grobot_lim_pus_L_High[MAX_AXIS_NUM]=
 //===================
 //==ROBOT link length
 //====================
-#define L0 225    	//head to shoulder
+#define L0 248    	//head to shoulder
 #define L1 250    	//L-type linker long side
 #define L2 25   	//L-type linker short side
 #define L3 25     	//L-type linker short side
 #define L4 230     	//L-type linker long side
-#define L5 210     	//length from wrist to end effector
+#define L5 195     	//length from wrist to end effector
 #define X_BASE 0  	//基準點只能都先設0
 #define Y_BASE 0
 #define Z_BASE 0
