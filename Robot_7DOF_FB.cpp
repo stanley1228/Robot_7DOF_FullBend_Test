@@ -1386,15 +1386,13 @@ int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const fl
 	Mat V_rf_l4_unit=V_rf_l4/norm(V_rf_l4,NORM_L2);
 	Mat V_wst_to_projend_rfl4_nuf_unit=V_wst_to_projend_rfl4_nuf/norm(V_wst_to_projend_rfl4_nuf,NORM_L2);
 	Mat Vn_rfl4_WstToProjEndRfl4Nuf=V_rf_l4_unit.cross(V_wst_to_projend_rfl4_nuf_unit);
-
+	Vn_rfl4_WstToProjEndRfl4Nuf=Vn_rfl4_WstToProjEndRfl4Nuf/norm(Vn_rfl4_WstToProjEndRfl4Nuf,NORM_L2);
 
 	//平面法向量 和 Vn_rfl4_nuf  同邊要加負號  判斷theta5要往上或往下轉
 	if (norm(Vn_rfl4_WstToProjEndRfl4Nuf - Vn_rfl4_nuf,NORM_L2) < DEF_NORM_VERY_SMALL)
         theta[Index_AXIS5]=-acos(tempfloat); 
     else
         theta[Index_AXIS5]=acos(tempfloat); 
-
-	
 
 	// ==Axis6== //
 	float *pVn_u_f=Vn_u_f.ptr<float>(0);
@@ -1581,7 +1579,7 @@ int MoveToPoint(int RLHand,float Point[7],float vel_deg)  //point[x,y,z,alpha,be
 	return 0;
 }
 
-//#define CHECK_JOINT_PATH
+#define CHECK_JOINT_PATH
 #ifdef	CHECK_JOINT_PATH
 #include<fstream>
 extern fstream gfileR;
@@ -1787,8 +1785,8 @@ int setPosition_x86(int ServoID, int Position, int Speed)//stanley
 int DXL_Initial_x86()
 {
 	int rt=0;
-	const int default_portnum=6;//latte_panda
-	//const int default_portnum=5;//my pc
+	//const int default_portnum=6;//latte_panda
+	const int default_portnum=5;//my pc
 	const int default_baudnum=1;
 
 	printf("DXL_port=%d\n",default_portnum);
