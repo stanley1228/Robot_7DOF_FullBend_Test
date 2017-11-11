@@ -442,7 +442,7 @@ static const float grobot_lim_pus_L_High[MAX_AXIS_NUM]=
 //==IK計算使用
 //====================
 #define DEF_NORM_VERY_SMALL (1.e-3)//norm很小的量判斷為0使用
-#define DEF_COSVAL_VERY_SMALL (1.e-6)//cos值很小的量判斷為0使用
+#define DEF_COSVAL_VERY_SMALL (1.e-7)//cos值很小的量判斷為0使用
 
 //==========
 //Function
