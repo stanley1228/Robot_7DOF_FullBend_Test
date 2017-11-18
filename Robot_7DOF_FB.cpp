@@ -20,6 +20,7 @@
 
 #include "dynamixel.h"
 #include <windows.h> //QPDelay_ms使用
+#include<fstream>//寫檔使用
 
 #pragma comment(lib,"dynamixel.lib") 
 
@@ -32,7 +33,19 @@
 #pragma comment(lib,"opencv_objdetect2413d.lib")
 
 
-
+				
+#define F446RE_GRIPPER_EN
+#define CHECK_CARTESIAN_PATH 
+//#define GRIPPER_ON_LATTE
+#define MOVETOPOINT_DUAL
+//#define CHECK_JOINT_PATH   //MoveToPoint_Dual函式 那邊也要def
+#define MOVE_TO_INITIAL_POINT
+//#define RECORD_JOINT_ANGLE
+//#define DEF_WAIT_ENTER
+#ifdef  CHECK_JOINT_PATH
+fstream gfileR;
+fstream gfileL;
+#endif
 
 
 
@@ -506,6 +519,537 @@ void WaitMotionDoneDual()
 	
 }
 
+
+#define DEF_TYPE_LINE		1
+#define DEF_TYPE_ARC		2
+#define DEF_TYPE_GRIP_NOACT	3
+#define DEF_TYPE_GRIP_HOLD	4
+#define DEF_TYPE_GRIP_REL	5
+#define DEF_TYPE_SP_ON		6 
+#define DEF_TYPE_SP_OFF		7
+#define DEF_TYPE_FL_UP		8 
+#define DEF_TYPE_FL_DOWN	9
+#define DEF_TYPE_TRIM_ON	10 
+#define DEF_TYPE_TRIM_OFF	11
+
+enum{
+	S_INITIAL=0,
+	S_FL_UP_1,//抬壓腳抬1
+	S_R_HOLD_L_HOLD_1,
+	S_FL_DOWN_1,//抬壓腳壓1
+	S_SP_ON_1,
+	S_R_FX_L_FX_1,
+	S_SP_OFF_1,
+	S_R_KEEP_L_REL_1,
+	S_R_KEEP_L_FY_1,
+	S_R_KEEP_L_FX_1,
+	S_R_KEEP_L_BY_1,
+	S_R_KEEP_L_HOLD_1,
+	S_FL_UP_2,//抬壓腳抬2
+	S_R_FCIRX_L_BCIRX_1,
+	S_FL_DOWN_2,//抬壓腳壓2
+	S_R_REL_L_HOLD_1,
+	S_R_BXY_L_KEEP_1,
+	S_R_BX_L_KEEP_1,
+	S_R_FXY_L_KEEP_1,
+	S_R_HOLD_L_KEEP_1,
+};
+
+void TestSewingAction()
+{
+	const int SegSize=20;
+
+	//==各段花費時間==//
+	float SeqItv[SegSize]={0};//Sequence  invterval
+
+	SeqItv[S_INITIAL]=0;
+	SeqItv[S_FL_UP_1]=2;//抬壓腳抬1
+	SeqItv[S_R_HOLD_L_HOLD_1]=2;//右手夾 左手夾
+	SeqItv[S_FL_DOWN_1]=2;//抬壓腳壓1
+	SeqItv[S_SP_ON_1]=0.05;//主軸開始縫
+	SeqItv[S_R_FX_L_FX_1]=3;//右手往正X SewingLenth 左手往正X 縫線長度 SewingLenth 
+	SeqItv[S_SP_OFF_1]=2;//主軸停止
+	SeqItv[S_R_KEEP_L_REL_1]=2;//右手不動 左手開1
+	SeqItv[S_R_KEEP_L_FY_1]=3;//右手不動 左手往正y移動 
+	SeqItv[S_R_KEEP_L_FX_1]=4;//右手不動 左手往正X 抓取點間隔長度(Release move lenth)
+	SeqItv[S_R_KEEP_L_BY_1]=3;//右手不動 左手往負y移動MovOutLen
+
+	SeqItv[S_R_KEEP_L_HOLD_1]=2;///右手不動 左手夾
+	SeqItv[S_FL_UP_2]=2;//抬壓腳抬2
+	
+	SeqItv[S_R_FCIRX_L_BCIRX_1]=3;//右手旋轉往正X 左手旋轉往負X
+	SeqItv[S_FL_DOWN_2]=2;//抬壓腳壓2
+
+	SeqItv[S_R_REL_L_HOLD_1]=2;//右手開 左手不動
+	SeqItv[S_R_BXY_L_KEEP_1]=2;//右手往X負Y負移出1  左手不動1 
+	SeqItv[S_R_BX_L_KEEP_1]=5;//右手往X負  左手不動1
+	SeqItv[S_R_FXY_L_KEEP_1]=2;//右手往X正Y正  左手不動1 
+	SeqItv[S_R_HOLD_L_KEEP_1]=2;//右手夾 左手不動1
+
+
+	//==絕對時間標計==//
+	float Seqt[SegSize]={0};
+	float CurT=0;
+
+	for(int i=0;i<SegSize;i++) 
+	{
+		CurT=CurT+SeqItv[i];
+		Seqt[i]=CurT;
+	}
+	float TotalTime=CurT;
+	
+	
+	float Needle_RobotF[3]={350,-300,30};//針點在手臂坐標系位置   
+	float Needle_ini_Plate[3]={30,-30,0};//下針點在架子plate座標系上的初始點
+	float TranFrameToRobot[3]={0};//利用兩個的差值去做比較
+
+	for(int i=0;i<3;i++) 
+	{
+		TranFrameToRobot[i]=Needle_RobotF[i]-Needle_ini_Plate[i];
+	}
+
+	float MovOutLen=50;//移出抓取點的長度
+	float SewingLength=60;//縫紉行程
+	float RelMovLen=180;//框架抓取點間距
+
+	//右手圓周路徑
+	//ini_rotate_p_R=[-90 -90 0]+[SewingLength 0 0]+TranFrameToRobot;//往x方向前進140之後，開始做旋轉 從架子坐標系轉到手臂座標系
+	float ini_rotate_p_R[3]={0};
+	ini_rotate_p_R[DEF_X]=-90+SewingLength+TranFrameToRobot[DEF_X];
+	ini_rotate_p_R[DEF_Y]=-90+TranFrameToRobot[DEF_Y];
+	ini_rotate_p_R[DEF_Z]=TranFrameToRobot[DEF_Z];
+
+	float rR=sqrt(pow((ini_rotate_p_R[DEF_X]-Needle_RobotF[DEF_X]),2)+pow((ini_rotate_p_R[DEF_Y]-Needle_RobotF[DEF_Y]),2));
+	float ini_rad_R=DEF_PI+atan((ini_rotate_p_R[DEF_Y]-Needle_RobotF[DEF_Y])/(ini_rotate_p_R[DEF_X]-Needle_RobotF[DEF_X]));//旋轉時的起始旋轉角度
+
+	//左手圓周路徑
+	//ini_rotate_p_L=[90 90 0]+[SewingLength 0 0]+TranFrameToRobot;%往x方向前進140
+	float ini_rotate_p_L[3]={0};
+	ini_rotate_p_L[DEF_X]=90+SewingLength+TranFrameToRobot[DEF_X];
+	ini_rotate_p_L[DEF_Y]=90+TranFrameToRobot[DEF_Y];
+	ini_rotate_p_L[DEF_Z]=TranFrameToRobot[DEF_Z];
+
+	float rL=sqrt(pow((ini_rotate_p_L[DEF_X]-Needle_RobotF[DEF_X]),2)+pow((ini_rotate_p_L[DEF_Y]-Needle_RobotF[DEF_Y]),2));
+	float ini_rad_L=atan((ini_rotate_p_L[DEF_Y]-Needle_RobotF[DEF_Y])/(ini_rotate_p_L[DEF_X]-Needle_RobotF[DEF_X]));
+
+	float HoldLen_L[3]={180,0,0};//左手抓取點間距 由框決定
+	float HoldLen_R[3]={180,0,0};//右手抓取點間距 由框決定
+	
+
+	//==路徑點
+	//float R_p[SegSize][7]={   
+	//	{210,	-360,	0,	50,	-90,	0,	-50},	//起始點
+	//	{210,	-360,	0,	50,	-90,	0,	-50},	//右手夾 左手夾
+	//	{350,	-360,	0,  50, -90,	0,	-50},	//右手往正X 140 左手往正X 140 
+	//	{350,	-360,	0,  50, -90,	0,	-50},	//右手不動 左手開1
+	//	{350,	-360,	0,  50, -90,	0,	-50},	//右手不動 左手往正X 180
+	//	{350,	-360,	0 , 50 ,-90,	0,	-50},	//右手不動 左手夾1
+	//	{390,	-360,	0,  50, -90,	0,	-50},	//右手旋轉往正X 左手旋轉往負X
+	//	{390,	-360,	0,  50, -90,	0,	-50},	//右手開 左手不動1
+	//	{210,	-360,	0,  50, -90,	0,	-50}};  //右手往X負  左手不動1 
+	float R_p_robotF[SegSize][8]={   
+	{-90+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-50, DEF_TYPE_GRIP_REL},//起始點
+	{-90+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-50, DEF_TYPE_FL_UP},//抬壓腳抬1
+	{-90+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-50, DEF_TYPE_GRIP_HOLD},	//右手夾 左手夾
+	{-90+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-50, DEF_TYPE_FL_DOWN},	//抬壓腳壓1
+	{-90+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-50, DEF_TYPE_SP_ON},	//主軸啟動
+	{-90+SewingLength+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-50, DEF_TYPE_LINE},	//右手往正X SewingLenth 左手往正X 縫線長度 SewingLenth 
+	{-90+SewingLength+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-50, DEF_TYPE_SP_OFF},//主軸停止
+	{-90+SewingLength+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-50, DEF_TYPE_GRIP_NOACT},	//右手不動 左手開1
+	{-90+SewingLength+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-50, DEF_TYPE_LINE},	//右手不動 左手往正y移動 
+	{-90+SewingLength+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-50, DEF_TYPE_LINE},	//右手不動 左手往正X 抓取點間隔長度(Release move lenth)
+	{-90+SewingLength+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-50, DEF_TYPE_LINE},   //右手不動 左手往負y移動MovOutLen
+	{-90+SewingLength+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-50, DEF_TYPE_GRIP_NOACT},///右手不動 左手夾
+	{-90+SewingLength+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-50, DEF_TYPE_FL_UP},//抬壓腳抬2
+	{90+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-50, DEF_TYPE_ARC},	//右手旋轉往正X 左手旋轉往負X
+	{90+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-50, DEF_TYPE_FL_DOWN},//抬壓腳壓2
+	{90+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-50, DEF_TYPE_GRIP_REL},	//右手開 左手不動1
+	{90-MovOutLen+TranFrameToRobot[DEF_X],	-90-MovOutLen+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-70, DEF_TYPE_LINE},//右手往X負Y負移出  左手不動1
+	{-90-MovOutLen+TranFrameToRobot[DEF_X],	-90-MovOutLen+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-70, DEF_TYPE_LINE},//右手往X負  左手不動1 
+	{-90+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-70, DEF_TYPE_LINE},//右手往X往Y正  左手不動1
+	{-90+TranFrameToRobot[DEF_X],	-90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	50,	0, 0,-70, DEF_TYPE_GRIP_HOLD}}; //右手夾 左手不動1
+	
+	
+	//Mat V_r_end=(Mat_<float>(9,9) <<Pend[0]-base[0],//x 
+	//								Pend[1]-base[1],//y
+	//								Pend[2]-base[2]);//z
+		
+	//float L_p[SegSize][8]={  
+	//	{210,-180,0,-90,90,0,90},	//起始點
+	//	{210,-180,0,-90,90,0,90},	//右手夾 左手夾
+	//	{350,-180,0,-70,90,0,90},	//右手往正X 140 左手往正X 140 
+	//	{350,-180,0,-70,90,0,90},	//右手不動 左手開1
+	//	{530,-180,0,-50,90,0,90},	//右手不動 左手往正X 180
+	//	{530,-180,0,-50,90,0,90},	//右手不動 左手夾1
+	//	{210,-180,0,-90,90,0,90},	//右手旋轉往正X 左手旋轉往負X
+	//	{210,-180,0,-90,90,0,90},	//右手開 左手不動1
+	//	{210,-180,0,-90,90,0,90}};	//右手往X負  左手不動1 
+	
+	float L_p_robotF[SegSize][8]={   
+	{-90+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z], -90, 0, 0,90, DEF_TYPE_GRIP_REL},//起始點
+	{-90+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y], 0+TranFrameToRobot[DEF_Z], -90, 0, 0,90, DEF_TYPE_FL_UP},//抬壓腳抬1
+	{-90+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z], -90, 0, 0,90, DEF_TYPE_GRIP_HOLD},//右手夾 左手夾
+	{-90+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z], -90, 0, 0,90, DEF_TYPE_FL_DOWN},//抬壓腳 壓
+	{-90+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z], -90, 0, 0,90, DEF_TYPE_SP_ON},//主軸啟動
+	{-90+SewingLength+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z], -90, 0, 0,90, DEF_TYPE_LINE},//右手往正X SewingLenth 左手往正X 縫線長度 SewingLenth 
+	{-90+SewingLength+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z], -90, 0, 0,90, DEF_TYPE_SP_OFF},//主軸停止
+	{-90+SewingLength+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z], -90, 0, 0,90, DEF_TYPE_GRIP_REL},//右手不動 左手開1
+	{-90+SewingLength+TranFrameToRobot[DEF_X],	90+MovOutLen+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	-90, 0, 0,90, DEF_TYPE_LINE},//右手不動 左手往正y移動 
+	{-90+SewingLength+RelMovLen+TranFrameToRobot[DEF_X],	90+MovOutLen+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	-60,	0, 0,90, DEF_TYPE_LINE},	//右手不動 左手往正X 抓取點間隔長度(Release move lenth)
+	{-90+SewingLength+RelMovLen+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z], -60, 0, 0,90, DEF_TYPE_LINE},   //右手不動 左手往負y移動MovOutLen
+	{-90+SewingLength+RelMovLen+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z], -60, 0, 0,90, DEF_TYPE_GRIP_HOLD},///右手不動 左手夾
+	{-90+SewingLength+RelMovLen+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z], -60, 0, 0,90, DEF_TYPE_FL_UP},//抬壓腳 抬
+	{-90+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	-90,	0, 0,90, DEF_TYPE_ARC},	//右手旋轉往正X 左手旋轉往負X
+	{-90+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	-90,	0, 0,90, DEF_TYPE_FL_DOWN},//抬壓腳 壓
+	{-90+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	-90,	0, 0,90, DEF_TYPE_GRIP_NOACT},	//右手開 左手不動1
+	{-90+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	-90,	0, 0,90, DEF_TYPE_LINE},//右手往Y負  左手不動1 
+	{-90+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	-90,	0, 0,90, DEF_TYPE_LINE},//右手往X負  左手不動1 
+	{-90+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	-90,	0, 0,90, DEF_TYPE_LINE},//右手往Y正  左手不動1 
+	{-90+TranFrameToRobot[DEF_X],	90+TranFrameToRobot[DEF_Y],	0+TranFrameToRobot[DEF_Z],	-90,	0, 0,90, DEF_TYPE_GRIP_NOACT}};//右手夾 左手不動1
+
+
+	
+
+
+	//==流程需用變數
+	//float CycleT=0.1f;
+#ifndef RECORD_JOINT_ANGLE
+	float CycleT=0.01f; //不讀feedback時 原matrix 大約22m  opencv mat 大概2.5ms 因此抓10ms
+	//float CycleT=0.5f;
+#else
+	float CycleT=0.1f; //有讀feedback時需要 22+17+17=56ms 19+16+16=51ms
+#endif
+
+	//float CycleT=0.040f; //單隻手沒接的不讀取
+	//float CycleT=0.03f; //不讀feedback時 大約22m 不過cycle time設大一點不會有在末點over load情況，cycltime比實際大，表示會在到達前下新命令
+
+	float Itv=0; //interval of the segment
+	float t=0; //t of each segment (0~interval)
+	
+	
+
+	//==variable for reocrd file==//
+	//open file
+#ifdef	RECORD_JOINT_ANGLE
+	fstream fileR;
+	fstream fileL;
+	fileR.open("D://GetDrinkJointAngle_R.csv",ios::out|ios::trunc);
+	fileL.open("D://GetDrinkJointAngle_L.csv",ios::out|ios::trunc);
+#endif
+
+#ifdef CHECK_CARTESIAN_PATH
+	fstream fileR;
+	fstream fileL;
+	fileR.open("D://GetSewCartesian_R.csv",ios::out|ios::trunc);
+	fileL.open("D://GetSewCartesian_L.csv",ios::out|ios::trunc);
+
+#endif
+
+#ifdef	CHECK_JOINT_PATH
+	gfileR.open("C://stanley//SewJoint_CMD_R.csv",ios::out|ios::trunc);
+	gfileL.open("C://stanley//SewJoint_CMD_L.csv",ios::out|ios::trunc);
+#endif
+	
+	
+	//==record para==//
+	float pos_deg_R[MAX_AXIS_NUM]={0};
+	float pos_deg_L[MAX_AXIS_NUM]={0};
+	float pos_deg_last_ok_R[MAX_AXIS_NUM]={0};
+	float pos_deg_last_ok_L[MAX_AXIS_NUM]={0};
+	int n=0;
+	int rt=0;
+	
+	//==Robotic arm pose==//
+	const int POINT_DIMENTION=7; //[x,y,z,alpha,beta,gamma,redant_alppha]
+	float PathPlanPoint_R[POINT_DIMENTION]={0};
+	float PathPlanPoint_L[POINT_DIMENTION]={0};
+	float vel_deg_R=20;
+	float vel_deg_L=20;
+
+	//=========================//
+	//==move to initial point==//
+	//=========================//
+#ifdef	MOVE_TO_INITIAL_POINT
+	
+	//MoveToPoint_Dual(R_p[0],pose_deg_R,Rednt_alpha_R,vel_deg_R,L_p[0],pose_deg_L,Rednt_alpha_L,vel_deg_L);  //20ms
+	MoveToPoint(DEF_RIGHT_HAND,R_p_robotF[0],vel_deg_R);
+	MoveToPoint(DEF_LEFT_HAND,L_p_robotF[0],vel_deg_L);
+	printf("move to p0..\n");
+	WaitMotionDoneDual();
+#endif
+
+#ifdef	DEF_WAIT_ENTER
+	printf("In initial point. press any key to continue...\n");
+	getchar();
+#endif
+	//=========================//
+	//==Sewing process start ==//
+	//=========================//
+	LARGE_INTEGER nFreq;
+	LARGE_INTEGER nBeginTime;
+	LARGE_INTEGER nEndTime;
+
+	QueryPerformanceFrequency(&nFreq);
+	
+	float abst=0.0;
+	int index=1;
+	int GripperAlreadyAct=0;// already send command to gripper 
+	int IOAlreadyAct=0;
+
+	for(abst=0.0;abst<=TotalTime;abst+=CycleT)
+	{
+		QueryPerformanceCounter(&nBeginTime); //Record cycle start time
+
+		if(abst>Seqt[index] && (index<SegSize))
+		{
+			index=index+1;
+			GripperAlreadyAct=0;//reset 上一段的夾爪旗標 
+			IOAlreadyAct=0;
+		}
+		//if(abst>TotalTime)
+		//	abst=TotalTime;
+
+		Itv=SeqItv[index];
+		t=abst-Seqt[index-1];
+
+		int Rtype=(int)R_p_robotF[index][DEF_ACT_TYPE];
+		int Ltype=(int)L_p_robotF[index][DEF_ACT_TYPE];
+		
+		if(Rtype==DEF_TYPE_LINE)
+		{
+			for(int f=0;f<POINT_DIMENTION;f++) 
+			{
+				PathPlanPoint_R[f]=R_p_robotF[index-1][f]+(R_p_robotF[index][f]-R_p_robotF[index-1][f])*t/Itv;//上一筆為起始點開始走
+				PathPlanPoint_L[f]=L_p_robotF[index-1][f]+(L_p_robotF[index][f]-L_p_robotF[index-1][f])*t/Itv;    
+			}
+		}
+		else if(Rtype==DEF_TYPE_ARC)
+		{
+			for(int f=0;f<POINT_DIMENTION;f++) 
+			{			
+				PathPlanPoint_R[DEF_X]=Needle_RobotF[DEF_X]+(float)(rR*(cos(0.5*DEF_PI*t/Itv + ini_rad_R))); 
+				PathPlanPoint_R[DEF_Y]=Needle_RobotF[DEF_Y]+(float)(rR*(sin(0.5*DEF_PI*t/Itv + ini_rad_R))); 
+				PathPlanPoint_R[DEF_Z]=Needle_RobotF[DEF_Z];
+				PathPlanPoint_R[DEF_ALPHA]=R_p_robotF[index-1][DEF_ALPHA]+(R_p_robotF[index][DEF_ALPHA]-R_p_robotF[index-1][DEF_ALPHA])*t/Itv; 
+				PathPlanPoint_R[DEF_BETA]=R_p_robotF[index-1][DEF_BETA]+(R_p_robotF[index][DEF_BETA]-R_p_robotF[index-1][DEF_BETA])*t/Itv;
+				PathPlanPoint_R[DEF_GAMMA]=R_p_robotF[index-1][DEF_GAMMA]+(R_p_robotF[index][DEF_GAMMA]-R_p_robotF[index-1][DEF_GAMMA])*t/Itv;
+
+				PathPlanPoint_L[DEF_X]=Needle_RobotF[DEF_X]+(float)(rL*(cos(0.5*DEF_PI*t/Itv + ini_rad_L))); 
+				PathPlanPoint_L[DEF_Y]=Needle_RobotF[DEF_Y]+(float)(rL*(sin(0.5*DEF_PI*t/Itv + ini_rad_L))); 
+				PathPlanPoint_L[DEF_ALPHA]=L_p_robotF[index-1][DEF_ALPHA]+(L_p_robotF[index][DEF_ALPHA]-L_p_robotF[index-1][DEF_ALPHA])*t/Itv; 
+				PathPlanPoint_L[DEF_BETA]=L_p_robotF[index-1][DEF_BETA]+(L_p_robotF[index][DEF_BETA]-L_p_robotF[index-1][DEF_BETA])*t/Itv;
+				PathPlanPoint_L[DEF_GAMMA]=L_p_robotF[index-1][DEF_GAMMA]+(L_p_robotF[index][DEF_GAMMA]-L_p_robotF[index-1][DEF_GAMMA])*t/Itv;
+			}
+		}
+        else if((Rtype==DEF_TYPE_GRIP_HOLD) || (Ltype==DEF_TYPE_GRIP_HOLD) || (Rtype==DEF_TYPE_GRIP_REL) || (Ltype==DEF_TYPE_GRIP_REL))
+		{
+			for(int f=0;f<POINT_DIMENTION;f++) 
+			{
+				PathPlanPoint_R[f]=R_p_robotF[index][f]; 
+				PathPlanPoint_L[f]=L_p_robotF[index][f];
+			}
+
+			if(GripperAlreadyAct==0)
+			{
+				if(Ltype==DEF_TYPE_GRIP_HOLD)
+				{
+#ifdef F446RE_GRIPPER_EN
+					F446RE_Gripper_Hold(DEF_LEFT_HAND,true,1000);
+					Sleep(1500);//連續接著下時需要delay 
+#endif				
+					printf("left hold\n");
+				}
+				if(Ltype==DEF_TYPE_GRIP_REL)
+				{
+#ifdef F446RE_GRIPPER_EN
+					F446RE_Gripper_Hold(DEF_LEFT_HAND,false,1000);
+					Sleep(1500);//ms 
+#endif
+					printf("left release\n");
+				}
+				if(Rtype==DEF_TYPE_GRIP_HOLD)
+				{
+#ifdef F446RE_GRIPPER_EN
+					F446RE_Gripper_Hold(DEF_RIGHT_HAND,true,1000);
+					Sleep(1500);
+#endif				
+					printf("right hold\n");
+				}
+				if(Rtype==DEF_TYPE_GRIP_REL)
+				{
+#ifdef F446RE_GRIPPER_EN
+					F446RE_Gripper_Hold(DEF_RIGHT_HAND,false,1000);
+					Sleep(1500);//ms
+#endif
+					printf("right release\n");
+				}
+				GripperAlreadyAct=1;
+			}
+		}
+		else if((Rtype==DEF_TYPE_SP_ON) || (Rtype==DEF_TYPE_SP_OFF) || (Rtype==DEF_TYPE_FL_UP) || (Rtype==DEF_TYPE_FL_DOWN) || (Rtype==DEF_TYPE_TRIM_ON) || (Rtype==DEF_TYPE_TRIM_OFF))
+		{
+			for(int f=0;f<POINT_DIMENTION;f++) 
+			{
+				PathPlanPoint_R[f]=R_p_robotF[index][f]; 
+				PathPlanPoint_L[f]=L_p_robotF[index][f];
+			}
+
+			if(IOAlreadyAct==0)
+			{
+				if(Rtype==DEF_TYPE_SP_ON)
+				{
+#ifdef F446RE_GRIPPER_EN
+					F446RE_Spindle(true);
+#endif
+					printf("spindle on\n");
+				}
+				if(Rtype==DEF_TYPE_SP_OFF)
+				{
+#ifdef F446RE_GRIPPER_EN
+					F446RE_Spindle(false);
+#endif
+					printf("spindle off\n");
+				}
+				if(Rtype==DEF_TYPE_FL_UP)
+				{
+#ifdef F446RE_GRIPPER_EN
+					F446RE_FootLifter(true);
+#endif
+					printf("footlifter up\n");
+				}
+				if(Rtype==DEF_TYPE_FL_DOWN)
+				{
+#ifdef F446RE_GRIPPER_EN
+					F446RE_FootLifter(false);
+#endif
+					printf("footlifter down\n");
+				}
+				if(Rtype==DEF_TYPE_TRIM_ON)
+				{
+#ifdef F446RE_GRIPPER_EN
+					F446RE_Trimmer(true);
+#endif
+					printf("trimmer on\n");
+				}            
+				if(Rtype==DEF_TYPE_TRIM_OFF)
+				{
+#ifdef F446RE_GRIPPER_EN
+					F446RE_Trimmer(false);
+#endif
+					printf("trimmer off\n");
+				}
+			}
+			IOAlreadyAct=1;
+		}
+		vel_deg_R=30;
+		vel_deg_L=30;
+		//vel_deg_R=0;
+		//vel_deg_L=0;
+		
+
+#ifdef MOVETOPOINT_DUAL
+		//PathPlanPoint_R[0]=410;//test
+		//PathPlanPoint_R[1]=-360;
+		//PathPlanPoint_R[2]=15;
+		//PathPlanPoint_R[3]=50;
+		//PathPlanPoint_R[4]=0;
+		//PathPlanPoint_R[5]=0;
+		//PathPlanPoint_R[6]=-50;
+		MoveToPoint_Dual(PathPlanPoint_R,vel_deg_R,PathPlanPoint_L,vel_deg_L);  //使用原本matrix大約20ms    改為opencv matri後平均2.5ms 因此cycle time想抓10ms  
+#endif
+		printf("Pend_R=[%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f],Pend_L=[%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f]\n",PathPlanPoint_R[DEF_X],PathPlanPoint_R[DEF_Y],PathPlanPoint_R[DEF_Z],PathPlanPoint_R[DEF_ALPHA],PathPlanPoint_R[DEF_BETA],PathPlanPoint_R[DEF_GAMMA],PathPlanPoint_R[DEF_REDNT_ALPHA],PathPlanPoint_L[DEF_X],PathPlanPoint_L[DEF_Y],PathPlanPoint_L[DEF_Z],PathPlanPoint_L[DEF_ALPHA],PathPlanPoint_L[DEF_BETA],PathPlanPoint_L[DEF_GAMMA],PathPlanPoint_L[DEF_REDNT_ALPHA]);
+
+		
+		//==確認軌跡點==//
+#ifdef CHECK_CARTESIAN_PATH
+		char buffer[100];
+		n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f\n",abst,PathPlanPoint_R[DEF_X],PathPlanPoint_R[DEF_Y],PathPlanPoint_R[DEF_Z]);
+		fileR.write(buffer,n);
+
+		n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f\n",abst,PathPlanPoint_L[DEF_X],PathPlanPoint_L[DEF_Y],PathPlanPoint_L[DEF_Z]);
+		fileL.write(buffer,n);
+#endif 
+
+#ifdef RECORD_JOINT_ANGLE
+		////==Read right hand
+		rt=Read_pos(DEF_RIGHT_HAND,pos_deg_R,DEF_UNIT_DEG);
+
+		if(rt==0)
+		{
+			//for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+			//{
+			//	printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_R[i]);
+			//}
+			printf("\n");
+
+			
+			n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",abst,pos_deg_R[Index_AXIS1],pos_deg_R[Index_AXIS2],pos_deg_R[Index_AXIS3],pos_deg_R[Index_AXIS4],pos_deg_R[Index_AXIS5],pos_deg_R[Index_AXIS6],pos_deg_R[Index_AXIS7]);
+			fileR.write(buffer,n);
+			
+			memcpy(pos_deg_last_ok_R,pos_deg_R,sizeof(pos_deg_last_ok_R));
+		}
+		else //讀取失敗時，拿前一筆來補
+		{
+			//for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+			//{
+			//	printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_last_ok_R[i]);
+			//}
+			printf("\n");
+
+			n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",abst,pos_deg_last_ok_R[Index_AXIS1],pos_deg_last_ok_R[Index_AXIS2],pos_deg_last_ok_R[Index_AXIS3],pos_deg_last_ok_R[Index_AXIS4],pos_deg_last_ok_R[Index_AXIS5],pos_deg_last_ok_R[Index_AXIS6],pos_deg_last_ok_R[Index_AXIS7]);
+			fileR.write(buffer,n);
+		}
+
+		//==Read left hand
+		rt=Read_pos(DEF_LEFT_HAND,pos_deg_L,DEF_UNIT_DEG);
+
+		if(rt==0)
+		{
+			//for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+			//{
+			//	printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_L[i]);
+			//}
+			printf("\n");
+
+			n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",abst,pos_deg_L[Index_AXIS1],pos_deg_L[Index_AXIS2],pos_deg_L[Index_AXIS3],pos_deg_L[Index_AXIS4],pos_deg_L[Index_AXIS5],pos_deg_L[Index_AXIS6],pos_deg_L[Index_AXIS7]);
+			fileL.write(buffer,n);
+			
+			memcpy(pos_deg_last_ok_L,pos_deg_L,sizeof(pos_deg_last_ok_L));
+		}
+		else //讀取失敗時，拿前一筆來補
+		{
+			//for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+			//{
+			//	printf("f%d:%3.0f, ",gMapAxisNO[i],pos_deg_last_ok_L[i]);
+			//}
+			printf("\n");
+
+			n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",abst,pos_deg_last_ok_L[Index_AXIS1],pos_deg_last_ok_L[Index_AXIS2],pos_deg_last_ok_L[Index_AXIS3],pos_deg_last_ok_L[Index_AXIS4],pos_deg_last_ok_L[Index_AXIS5],pos_deg_last_ok_L[Index_AXIS6],pos_deg_last_ok_L[Index_AXIS7]);
+			fileL.write(buffer,n);
+		}
+#endif
+
+
+		do
+		{
+			Sleep(0);
+			QueryPerformanceCounter(&nEndTime);
+			//printf("%f\n",(double)(nEndTime.QuadPart-nBeginTime.QuadPart)*1000/(double)nFreq.QuadPart);
+		}
+		while((double)(nEndTime.QuadPart-nBeginTime.QuadPart)/(double)nFreq.QuadPart < CycleT);
+	}	
+
+#if	defined(RECORD_JOINT_ANGLE) || defined(CHECK_CARTESIAN_PATH) 
+	fileR.close();
+	fileL.close();
+#endif
+	
+#ifdef	CHECK_JOINT_PATH
+	gfileR.close();
+	gfileL.close();
+#endif
+}
+
 int TestMoveToSewingHome_Dual()
 {
 	//float theta_R[7]={0.02,-1.02,-0.06,1.48,0.19,0.34,1.18};
@@ -513,7 +1057,7 @@ int TestMoveToSewingHome_Dual()
 	float theta_L[7]={-0.97,-0.16,1.39,1.07,0.22,-0.35,-0.91};
 
 	//output to motor
-	unsigned short int velocity_R[MAX_AXIS_NUM]={4,3,5,2,4,4,4};
+	unsigned short int velocity_R[MAX_AXIS_NUM]={6,3,5,2,4,4,4};
 	unsigned short int velocity_L[MAX_AXIS_NUM]={4,4,4,4,4,4,4};
 	
 	Output_to_Dynamixel_Dual(theta_R,velocity_R,theta_L,velocity_L); 
