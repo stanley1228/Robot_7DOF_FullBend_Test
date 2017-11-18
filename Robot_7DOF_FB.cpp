@@ -476,7 +476,88 @@ int Read_pos(int RLHand,float *pos,unsigned char unit)
 	return rt;
 }
 
+void WaitMotionDoneDual()
+{
+	int rt=0;
+	bool stillmoving=true;
+	bool btemp=true;
+	int cnt_err=0;
 
+	//wait it
+	while(stillmoving)
+	{
+		rt=IsMoving(DEF_LEFT_HAND,&btemp);
+		if(rt==0)
+		{
+			stillmoving=btemp;
+		}
+		else
+		{
+			cnt_err++;//communication err
+			if(cnt_err==10)
+			{
+				printf("get moving status error\n");	
+				return;
+			}
+		}
+		Sleep(500);
+		printf("stillmoving..\n");	
+	}
+	
+}
+
+int TestMoveToSewingHome_Dual()
+{
+	//float theta_R[7]={0.02,-1.02,-0.06,1.48,0.19,0.34,1.18};
+	float theta_R[7]={0.08,-0.72,0.36,1.48,0.78,0.05,1.22};
+	float theta_L[7]={-0.97,-0.16,1.39,1.07,0.22,-0.35,-0.91};
+
+	//output to motor
+	unsigned short int velocity_R[MAX_AXIS_NUM]={4,3,5,2,4,4,4};
+	unsigned short int velocity_L[MAX_AXIS_NUM]={4,4,4,4,4,4,4};
+	
+	Output_to_Dynamixel_Dual(theta_R,velocity_R,theta_L,velocity_L); 
+
+	WaitMotionDoneDual();
+
+	Torque_Disable();
+	printf("Torque_Disable\n");	
+	return 0;
+
+}
+int Torque_Disable()
+{
+		//================================//
+	//==output to motor by syncpage===//
+	//===============================//
+	unsigned short int SyncPage[28]=
+	{ 
+		ID_RAXIS1,(unsigned short int)0, //ID,torque enable
+		ID_RAXIS2,(unsigned short int)0, 
+		ID_RAXIS3,(unsigned short int)0, 
+		ID_RAXIS4,(unsigned short int)0, 
+		ID_RAXIS5,(unsigned short int)0, 
+		ID_RAXIS6,(unsigned short int)0, 
+		ID_RAXIS7,(unsigned short int)0, 
+
+		ID_LAXIS1,(unsigned short int)0, 
+		ID_LAXIS2,(unsigned short int)0, 
+		ID_LAXIS3,(unsigned short int)0, 
+		ID_LAXIS4,(unsigned short int)0, 
+		ID_LAXIS5,(unsigned short int)0, 
+		ID_LAXIS6,(unsigned short int)0, 
+		ID_LAXIS7,(unsigned short int)0, 
+	};
+	
+#if (DEBUG)
+	//for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	//	printf("syncwrite AXIS%d pos=%d velocity=%d\n",gMapAxisNO[i],Ang_pulse[i],velocity[i]);
+#endif
+	
+	syncWrite_x86(TORQUE_ENABLE,1,SyncPage,28);//byte syncWrite(byte start_addr, byte num_of_data, int *param, int array_length);
+
+	return 0;
+}
 
 
 int Output_to_Dynamixel(int RLHand,const float *Ang_rad,const unsigned short int *velocity) 
@@ -1426,9 +1507,8 @@ int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const fl
 									1);		
 	Mat V_x_rot1to6=RotY(-theta[Index_AXIS1])*RotX(theta[Index_AXIS2])*V_temp4x1;//V_x_rot1to6=Ry(-theta(1))*Rx(theta(2))*[V_shx;1];  //第一軸和大地Z座標方向相反
 
-
 	//V_shx經過1to軸旋轉後變應該要與末點座標系的Z軸貼齊
-	temp=Rogridues(theta[Index_AXIS3],V_ru_l1*(1/norm(V_ru_l1)))*V_x_rot1to6;		//temp=Rogridues(theta(3),V_ru_l1/norm(V_ru_l1))*V_x_rot1to6;  
+	temp=Rogridues(theta[Index_AXIS3],V_ru_l1/norm(V_ru_l1,NORM_L2))*V_x_rot1to6;		//temp=Rogridues(theta(3),V_ru_l1/norm(V_ru_l1))*V_x_rot1to6;  
 	temp=Rogridues(theta[Index_AXIS4],Vn_u_f*(1/norm(Vn_u_f)))*temp;				//temp=Rogridues(theta(4),Vn_u_f/norm(Vn_u_f))*temp;  
 	temp=Rogridues(theta[Index_AXIS5],Vn_rfl4_nuf*(1/norm(Vn_rfl4_nuf)))*temp;		//temp=Rogridues(theta(5),Vn_rfl4_nuf/norm(Vn_rfl4_nuf))*temp; 
 	temp=Rogridues(theta[Index_AXIS6],Vn_nuf_rotx5_along_NRfl4Nuf)*temp;			//temp=Rogridues(theta(6),Vn_nuf_rotx5_along_NRfl4Nuf)*temp; 
@@ -1451,7 +1531,6 @@ int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const fl
 		else
 			tempfloat=-1;
 	}
-
 	if (norm(Vn_xrot1to6_VHhatz - V_H_hat_x,NORM_L2) <  DEF_NORM_VERY_SMALL)
         theta[Index_AXIS7]=acos(tempfloat);
     else
@@ -1579,7 +1658,7 @@ int MoveToPoint(int RLHand,float Point[7],float vel_deg)  //point[x,y,z,alpha,be
 	return 0;
 }
 
-#define CHECK_JOINT_PATH
+//#define CHECK_JOINT_PATH
 #ifdef	CHECK_JOINT_PATH
 #include<fstream>
 extern fstream gfileR;
@@ -1786,7 +1865,8 @@ int DXL_Initial_x86()
 {
 	int rt=0;
 	//const int default_portnum=6;//latte_panda
-	const int default_portnum=5;//my pc
+	//const int default_portnum=5;//my pc
+	const int default_portnum=5;//vaio plate
 	const int default_baudnum=1;
 
 	printf("DXL_port=%d\n",default_portnum);
@@ -1794,13 +1874,15 @@ int DXL_Initial_x86()
 	
 	return rt;
 }
-
+ 
 int DXL_Terminate_x86()
 {
 	dxl_terminate();
 	
 	return 0;
 }
+
+
 
 //========================
 //==Modbus control gripper

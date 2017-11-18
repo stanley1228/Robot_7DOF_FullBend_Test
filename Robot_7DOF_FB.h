@@ -452,6 +452,10 @@ unsigned char getMapAxisID(unsigned char index);
 int ROM_Setting_Dual();
 void PID_Setting_Dual();
 int Read_pos(int RLHand,float *pos,unsigned char unit);
+void WaitMotionDoneDual();
+int TestMoveToSewingHome_Dual();
+int Torque_Disable();
+
 int Output_to_Dynamixel(int RLHand,const float *Ang_rad,const unsigned short int *velocity) ;
 int Output_to_Dynamixel_Dual(const float *Ang_rad_R,const unsigned short int *velocity_R,const float *Ang_rad_L,const unsigned short int *velocity_L);
 int Output_to_Dynamixel_pulse(const unsigned short int *Ang_pulse,const unsigned short int *velocity);
