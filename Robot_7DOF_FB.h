@@ -444,6 +444,27 @@ static const float grobot_lim_pus_L_High[MAX_AXIS_NUM]=
 #define DEF_NORM_VERY_SMALL (1.e-3)//norm很小的量判斷為0使用
 #define DEF_COSVAL_VERY_SMALL (1.e-7)//cos值很小的量判斷為0使用
 
+//=====================================
+//自己建立的陣列class，為了要陣列相加減
+//=====================================
+class CStaArray 
+{
+public:
+	int m_ARR_SIZE;
+	float m_arr[7];
+	
+	CStaArray();
+	CStaArray(float x,float y,float z,float alpha,float beta,float gamma,float rednt_alpha);
+
+	float at(int index);
+	void SetArray(float x,float y,float z,float alpha,float beta,float gamma,float rednt_alpha);
+
+	CStaArray operator*(float k);
+	CStaArray operator+(CStaArray &other);
+	CStaArray operator-(CStaArray &other);
+};
+
+
 //==========
 //Function
 //==========
@@ -453,8 +474,13 @@ int ROM_Setting_Dual();
 void PID_Setting_Dual();
 int Read_pos(int RLHand,float *pos,unsigned char unit);
 void WaitMotionDoneDual();
+void TestSewingAction();
 int TestMoveToSewingHome_Dual();
 int Torque_Disable();
+void LineMoveTo(CStaArray &L_starP,CStaArray &L_endP,CStaArray &R_starP,CStaArray &R_endP,float CostTime);
+void RotateMoveTo(CStaArray &L_starP,CStaArray &L_endP,CStaArray &R_starP,CStaArray &R_endP,CStaArray &arc_cen,float rot_rad,float CostTime);
+void IKOutputToArm(CStaArray &PathPlanPoint_R,CStaArray &PathPlanPoint_L);
+
 
 int Output_to_Dynamixel(int RLHand,const float *Ang_rad,const unsigned short int *velocity) ;
 int Output_to_Dynamixel_Dual(const float *Ang_rad_R,const unsigned short int *velocity_R,const float *Ang_rad_L,const unsigned short int *velocity_L);
