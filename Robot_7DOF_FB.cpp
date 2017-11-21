@@ -29,7 +29,7 @@
 #pragma comment(lib,"opencv_legacy2413d.lib")
 #pragma comment(lib,"opencv_objdetect2413d.lib")
 
-#define F446RE_GRIPPER_EN
+//#define F446RE_GRIPPER_EN
 //#define CHECK_CARTESIAN_PATH 
 //#define GRIPPER_ON_LATTE
 #define MOVETOPOINT_DUAL
@@ -38,7 +38,7 @@
 //#define RECORD_JOINT_ANGLE
 //#define DEF_WAIT_ENTER
 
-const float gCycleT=0.5;
+const float gCycleT=0.01;
 
 using namespace cv;
 using namespace std;
@@ -843,26 +843,37 @@ void TestSewingAction()
 	const float RelMovLen=180;//框架抓取點間距
 
 	//==MoveToInitailPoint==//
-#ifdef	MOVE_TO_INITIAL_POINT
+#ifdef MOVE_TO_INITIAL_POINT
 	CStaArray R_IniP(-90,-90,0,50,0,0,-50);
 	CStaArray L_IniP(-90,90,0,-90,0,0,90);
 	MoveToInitailPoint(R_IniP,L_IniP);
+	Sleep(2000);
 #endif
 
-	//抬壓腳 抬
+	int IODelayTime=500;
+	int HoldTime=800;
+	int RelTime=800;
+
 #ifdef F446RE_GRIPPER_EN
+	//抬壓腳 抬
 	F446RE_FootLifter(true);
+	Sleep(5000);
 
 	//右手夾 左手夾
-	F446RE_Gripper_Hold(DEF_RIGHT_HAND,true,1000);
-	F446RE_Gripper_Hold(DEF_LEFT_HAND,true,1000);
+	F446RE_Gripper_Hold(DEF_RIGHT_HAND,true,HoldTime);
+	Sleep(IODelayTime);
+	F446RE_Gripper_Hold(DEF_LEFT_HAND,true,HoldTime);
+	Sleep(IODelayTime);
 
 	//抬壓腳 壓
 	F446RE_FootLifter(false);
+	Sleep(IODelayTime);
 
 	//主軸啟動
 	F446RE_Spindle(true);
+	
 #endif
+
 	//右手往正X SewingLenth 左手往正X 縫線長度 SewingLenth
 	CStaArray R_starP(-90,-90,0,50,0,0,-50);
 	CStaArray R_endP(-90+SewingLength,-90,0,50,0,0,-50);
@@ -875,9 +886,11 @@ void TestSewingAction()
 #ifdef F446RE_GRIPPER_EN	
 	//主軸停止
 	F446RE_Spindle(false);
+	Sleep(IODelayTime);
 
 	//右手不動 左手開
-	F446RE_Gripper_Hold(DEF_LEFT_HAND,false,800);
+	F446RE_Gripper_Hold(DEF_LEFT_HAND,false,RelTime);
+	Sleep(IODelayTime);
 #endif
 
 	//右手不動 左手往正y移動 
@@ -906,10 +919,12 @@ void TestSewingAction()
 
 #ifdef F446RE_GRIPPER_EN
 	//右手不動 左手夾
-	F446RE_Gripper_Hold(DEF_LEFT_HAND,true,800);
+	F446RE_Gripper_Hold(DEF_LEFT_HAND,true,HoldTime);
+	Sleep(IODelayTime);
 
 	//抬壓腳抬
 	F446RE_FootLifter(true);
+	Sleep(IODelayTime);
 #endif
 
 	//右手旋轉往正X 左手旋轉往負X
@@ -925,9 +940,11 @@ void TestSewingAction()
 #ifdef F446RE_GRIPPER_EN
 	//抬壓腳壓
 	F446RE_FootLifter(false);
+	Sleep(IODelayTime);
 
 	//右手開 左手不動
-	F446RE_Gripper_Hold(DEF_LEFT_HAND,false,800);
+	F446RE_Gripper_Hold(DEF_LEFT_HAND,false,RelTime);
+	Sleep(IODelayTime);
 #endif
 
 	//右手往X負Y負移出  左手不動1 
@@ -943,7 +960,7 @@ void TestSewingAction()
 	R_endP.SetArray(90-MovOutLen-RelMovLen,-90-MovOutLen,0,50,0,0,-70);
 	L_starP.SetArray(-90,90,0,-90,0,0,90);
 	L_endP.SetArray(-90,90,0,-90,0,0,90);
-	CostTime=5;
+	CostTime=3;
 	LineMoveTo(L_starP,L_endP,R_starP,R_endP,CostTime);
 
 	//右手往X往Y正MovOutLen  左手不動1 
@@ -956,7 +973,8 @@ void TestSewingAction()
 
 #ifdef F446RE_GRIPPER_EN
 	//右手夾 左手不動1
-	F446RE_Gripper_Hold(DEF_RIGHT_HAND,true,800);
+	F446RE_Gripper_Hold(DEF_RIGHT_HAND,true,HoldTime);
+	Sleep(IODelayTime);
 #endif
 
 	
