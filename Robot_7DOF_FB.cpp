@@ -29,13 +29,14 @@
 #pragma comment(lib,"opencv_legacy2413d.lib")
 #pragma comment(lib,"opencv_objdetect2413d.lib")
 
-//#define F446RE_GRIPPER_EN
+#define F446RE_GRIPPER_EN
 //#define CHECK_CARTESIAN_PATH 
 //#define GRIPPER_ON_LATTE
 #define MOVETOPOINT_DUAL
 //#define CHECK_JOINT_PATH  
 #define MOVE_TO_INITIAL_POINT
 //#define RECORD_JOINT_ANGLE
+//#define RECORD_JOINT_LOAD
 //#define DEF_WAIT_ENTER
 
 const float gCycleT=0.01;
@@ -479,6 +480,34 @@ int Read_pos(int RLHand,float *pos,unsigned char unit)
 		
 	return rt;
 }
+int ReadPresentLoad(int RLHand,float *LoadPercent)
+{
+	int i=0;
+	short int LoadValue=0;
+	int rt=0;
+
+	for(i=Index_AXIS1;i<MAX_AXIS_NUM;i++)
+	{
+		//read present load
+		if(RLHand==DEF_RIGHT_HAND)
+			LoadValue = dxl_read_word(gMapRAxisID[i], PRESENT_LOAD);
+		else if(RLHand==DEF_LEFT_HAND)
+			LoadValue = dxl_read_word(gMapLAxisID[i], PRESENT_LOAD);
+
+		//If communication ok calculate pulse offset and unit transform
+		if(dxl_get_result()!=COMM_RXSUCCESS)
+		{
+			rt=-gMapAxisNO[i];
+			LoadPercent[i]=0xffff;
+		}
+		else
+		{
+			LoadPercent[i]=(LoadValue&0x3ff)*0.097;//read low 10 bit 0~1024 and calcualte percetage
+		}
+	}
+		
+	return rt;
+}
 
 void WaitMotionDoneDual()
 {
@@ -581,7 +610,6 @@ static float gstatic_abst=0;
 void IKOutputToArm(CStaArray &PathPlanPoint_R,CStaArray &PathPlanPoint_L)
 {
 	
-	
 	//==Output to arm ==//
 	float vel_deg_R=30;
 	float vel_deg_L=30;
@@ -589,18 +617,18 @@ void IKOutputToArm(CStaArray &PathPlanPoint_R,CStaArray &PathPlanPoint_L)
 #ifdef MOVETOPOINT_DUAL
 	MoveToPoint_Dual(PathPlanPoint_R.m_arr,vel_deg_R,PathPlanPoint_L.m_arr,vel_deg_L);  //使用原本matrix大約20ms    改為opencv matri後平均2.5ms 因此cycle time想抓10ms  
 #endif
-		printf("Pend_R=[%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f],Pend_L=[%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f]\n",PathPlanPoint_R.at(DEF_X),PathPlanPoint_R.at(DEF_Y),PathPlanPoint_R.at(DEF_Z),PathPlanPoint_R.at(DEF_ALPHA),PathPlanPoint_R.at(DEF_BETA),PathPlanPoint_R.at(DEF_GAMMA),PathPlanPoint_R.at(DEF_REDNT_ALPHA),PathPlanPoint_L.at(DEF_X),PathPlanPoint_L.at(DEF_Y),PathPlanPoint_L.at(DEF_Z),PathPlanPoint_L.at(DEF_ALPHA),PathPlanPoint_L.at(DEF_BETA),PathPlanPoint_L.at(DEF_GAMMA),PathPlanPoint_L.at(DEF_REDNT_ALPHA));
+	//printf("Pend_R=[%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f],Pend_L=[%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f]\n",PathPlanPoint_R.at(DEF_X),PathPlanPoint_R.at(DEF_Y),PathPlanPoint_R.at(DEF_Z),PathPlanPoint_R.at(DEF_ALPHA),PathPlanPoint_R.at(DEF_BETA),PathPlanPoint_R.at(DEF_GAMMA),PathPlanPoint_R.at(DEF_REDNT_ALPHA),PathPlanPoint_L.at(DEF_X),PathPlanPoint_L.at(DEF_Y),PathPlanPoint_L.at(DEF_Z),PathPlanPoint_L.at(DEF_ALPHA),PathPlanPoint_L.at(DEF_BETA),PathPlanPoint_L.at(DEF_GAMMA),PathPlanPoint_L.at(DEF_REDNT_ALPHA));
 
 		
 		//==確認軌跡點==//
 #ifdef CHECK_CARTESIAN_PATH
-		char buffer[100];
-		int k=0;
-		k=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f\n",gstatic_abst,PathPlanPoint_R.at(DEF_X),PathPlanPoint_R.at(DEF_Y),PathPlanPoint_R.at(DEF_Z));
-		gfileR.write(buffer,k);
+	char buffer[100];
+	int k=0;
+	k=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f\n",gstatic_abst,PathPlanPoint_R.at(DEF_X),PathPlanPoint_R.at(DEF_Y),PathPlanPoint_R.at(DEF_Z));
+	gfileR.write(buffer,k);
 
-		k=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f\n",gstatic_abst,PathPlanPoint_L.at(DEF_X),PathPlanPoint_L.at(DEF_Y),PathPlanPoint_L.at(DEF_Z));
-		gfileL.write(buffer,k);
+	k=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f\n",gstatic_abst,PathPlanPoint_L.at(DEF_X),PathPlanPoint_L.at(DEF_Y),PathPlanPoint_L.at(DEF_Z));
+	gfileL.write(buffer,k);
 #endif 
 
 #ifdef RECORD_JOINT_ANGLE
@@ -670,6 +698,69 @@ void IKOutputToArm(CStaArray &PathPlanPoint_R,CStaArray &PathPlanPoint_L)
 		}
 #endif
 
+#ifdef RECORD_JOINT_LOAD
+		static int ccc=-1;
+		ccc++;
+		if((ccc)%10 ==0)
+		{
+			int rt=0,n=0;
+			char buffer[100];
+			float LoadPercent_R[MAX_AXIS_NUM]={0};
+			float LoadPercent_L[MAX_AXIS_NUM]={0};
+			float LoadPercent_last_ok_R[MAX_AXIS_NUM]={0};
+			float LoadPercent_last_ok_L[MAX_AXIS_NUM]={0};
+
+			rt=ReadPresentLoad(DEF_RIGHT_HAND,LoadPercent_R);
+
+			if(rt==0)
+			{
+				for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+				{
+					printf("R%d:%3.0f, ",gMapAxisNO[i],LoadPercent_R[i]);
+				}
+				printf("\n");
+
+			
+				n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",gstatic_abst,LoadPercent_R[Index_AXIS1],LoadPercent_R[Index_AXIS2],LoadPercent_R[Index_AXIS3],LoadPercent_R[Index_AXIS4],LoadPercent_R[Index_AXIS5],LoadPercent_R[Index_AXIS6],LoadPercent_R[Index_AXIS7]);
+				gfileR.write(buffer,n);
+			
+				memcpy(LoadPercent_last_ok_R,LoadPercent_R,sizeof(LoadPercent_last_ok_R));
+			}
+			else //讀取失敗時，拿前一筆來補
+			{
+				printf("read failed");
+				printf("\n");
+
+				n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",gstatic_abst,LoadPercent_last_ok_R[Index_AXIS1],LoadPercent_last_ok_R[Index_AXIS2],LoadPercent_last_ok_R[Index_AXIS3],LoadPercent_last_ok_R[Index_AXIS4],LoadPercent_last_ok_R[Index_AXIS5],LoadPercent_last_ok_R[Index_AXIS6],LoadPercent_last_ok_R[Index_AXIS7]);
+				gfileR.write(buffer,n);
+			}
+
+			rt=ReadPresentLoad(DEF_LEFT_HAND,LoadPercent_L);
+
+			if(rt==0)
+			{
+				for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
+				{
+					printf("L%d:%3.0f, ",gMapAxisNO[i],LoadPercent_L[i]);
+				}
+				printf("\n");
+
+			
+				n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",gstatic_abst,LoadPercent_L[Index_AXIS1],LoadPercent_L[Index_AXIS2],LoadPercent_L[Index_AXIS3],LoadPercent_L[Index_AXIS4],LoadPercent_L[Index_AXIS5],LoadPercent_L[Index_AXIS6],LoadPercent_L[Index_AXIS7]);
+				gfileL.write(buffer,n);
+			
+				memcpy(LoadPercent_last_ok_L,LoadPercent_L,sizeof(LoadPercent_last_ok_L));
+			}
+			else //讀取失敗時，拿前一筆來補
+			{
+				printf("read failed");
+				printf("\n");
+
+				n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",gstatic_abst,LoadPercent_last_ok_L[Index_AXIS1],LoadPercent_last_ok_L[Index_AXIS2],LoadPercent_last_ok_L[Index_AXIS3],LoadPercent_last_ok_L[Index_AXIS4],LoadPercent_last_ok_L[Index_AXIS5],LoadPercent_last_ok_L[Index_AXIS6],LoadPercent_last_ok_L[Index_AXIS7]);
+				gfileL.write(buffer,n);
+			}
+		}
+#endif
 		gstatic_abst+=gCycleT;
 
 
@@ -836,6 +927,11 @@ void TestSewingAction()
 	gfileL.open("C://stanley//SewJoint_CMD_L.csv",ios::out|ios::trunc);
 #endif
 
+#ifdef	RECORD_JOINT_LOAD
+	gfileR.open("C://stanley//SewJoint_LOAD_R.csv",ios::out|ios::trunc);
+	gfileL.open("C://stanley//SewJoint_LOAD_L.csv",ios::out|ios::trunc);
+#endif
+
 
 	//==static parameter==//
 	const float MovOutLen=50;//移出抓取點的長度
@@ -850,7 +946,7 @@ void TestSewingAction()
 	Sleep(2000);
 #endif
 
-	int IODelayTime=500;
+	int IODelayTime=1000;
 	int HoldTime=800;
 	int RelTime=800;
 
