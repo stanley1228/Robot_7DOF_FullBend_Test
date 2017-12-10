@@ -30,10 +30,11 @@
 #pragma comment(lib,"opencv_objdetect2413d.lib")
 
 //#define F446RE_GRIPPER_EN
-#define CHECK_CARTESIAN_PATH 
+//#define CHECK_CARTESIAN_PATH 
 //#define GRIPPER_ON_LATTE
-//#define MOVETOPOINT_DUAL
+#define MOVETOPOINT_DUAL
 //#define CHECK_JOINT_PATH  
+//#define CHECK_JOINT_VELOCITY
 //#define MOVE_TO_INITIAL_POINT
 //#define RECORD_JOINT_ANGLE
 //#define RECORD_JOINT_LOAD
@@ -579,6 +580,16 @@ CStaArray CStaArray::operator*(float k)
 	return temp;
 }
 
+
+CStaArray CStaArray::operator/(float k)
+{
+	CStaArray temp;
+    for (int i=0;i<m_ARR_SIZE;i++)
+        temp.m_arr[i]=m_arr[i]/k;
+    
+	return temp;
+}
+
 CStaArray CStaArray::operator+(CStaArray &other)
 {
 	CStaArray temp;
@@ -611,11 +622,17 @@ void IKOutputToArm(CStaArray &PathPlanPoint_R,CStaArray &PathPlanPoint_L)
 {
 	
 	//==Output to arm ==//
-	float vel_deg_R=30;
-	float vel_deg_L=30;
+	//float vel_deg_R=30;
+	//float vel_deg_L=30;
+
+	//float vel_deg_R[MAX_AXIS_NUM]={0};
+	//float vel_deg_L[MAX_AXIS_NUM]={0};
+
+	
+
 		
 #ifdef MOVETOPOINT_DUAL
-	MoveToPoint_Dual(PathPlanPoint_R.m_arr,vel_deg_R,PathPlanPoint_L.m_arr,vel_deg_L);  //使用原本matrix大約20ms    改為opencv matri後平均2.5ms 因此cycle time想抓10ms  
+	MoveToPoint_Dual(PathPlanPoint_R.m_arr,PathPlanPoint_L.m_arr);  //使用原本matrix大約20ms    改為opencv matri後平均2.5ms 因此cycle time想抓10ms  
 #endif
 	printf("Pend_R=[%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f],Pend_L=[%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f]\n",PathPlanPoint_R.at(DEF_X),PathPlanPoint_R.at(DEF_Y),PathPlanPoint_R.at(DEF_Z),PathPlanPoint_R.at(DEF_ALPHA),PathPlanPoint_R.at(DEF_BETA),PathPlanPoint_R.at(DEF_GAMMA),PathPlanPoint_R.at(DEF_REDNT_ALPHA),PathPlanPoint_L.at(DEF_X),PathPlanPoint_L.at(DEF_Y),PathPlanPoint_L.at(DEF_Z),PathPlanPoint_L.at(DEF_ALPHA),PathPlanPoint_L.at(DEF_BETA),PathPlanPoint_L.at(DEF_GAMMA),PathPlanPoint_L.at(DEF_REDNT_ALPHA));
 
@@ -1074,6 +1091,13 @@ void TestSewingAction()
 
 #endif
 
+#ifdef CHECK_JOINT_VELOCITY
+	gfileR.open("D://GetJoint_Vel_R.csv",ios::out|ios::trunc);
+	gfileL.open("D://GetJoint_Vel_L.csv",ios::out|ios::trunc);
+
+#endif
+	
+
 #ifdef	CHECK_JOINT_PATH
 	gfileR.open("C://stanley//SewJoint_CMD_R.csv",ios::out|ios::trunc);
 	gfileL.open("C://stanley//SewJoint_CMD_L.csv",ios::out|ios::trunc);
@@ -1260,7 +1284,7 @@ int TestMoveToSewingHome_Dual()
 }
 int Torque_Disable()
 {
-		//================================//
+	//================================//
 	//==output to motor by syncpage===//
 	//===============================//
 	unsigned short int SyncPage[28]=
@@ -1291,6 +1315,39 @@ int Torque_Disable()
 
 	return 0;
 }
+
+int SetAllAccTo(float deg_s2)
+{
+	unsigned short int acc_pus=deg_s2*DEF_RATIO_ACC_DEG_TO_PUS;
+
+	//================================//
+	//==output to motor by syncpage===//
+	//===============================//
+	unsigned short int SyncPage[28]=
+	{ 
+		ID_RAXIS1,(unsigned short int)acc_pus, //ID,torque enable
+		ID_RAXIS2,(unsigned short int)acc_pus, 
+		ID_RAXIS3,(unsigned short int)acc_pus, 
+		ID_RAXIS4,(unsigned short int)acc_pus, 
+		ID_RAXIS5,(unsigned short int)acc_pus, 
+		ID_RAXIS6,(unsigned short int)acc_pus, 
+		ID_RAXIS7,(unsigned short int)acc_pus, 
+
+		ID_LAXIS1,(unsigned short int)acc_pus, 
+		ID_LAXIS2,(unsigned short int)acc_pus, 
+		ID_LAXIS3,(unsigned short int)acc_pus, 
+		ID_LAXIS4,(unsigned short int)acc_pus, 
+		ID_LAXIS5,(unsigned short int)acc_pus, 
+		ID_LAXIS6,(unsigned short int)acc_pus, 
+		ID_LAXIS7,(unsigned short int)acc_pus, 
+	};
+	
+
+	syncWrite_x86(GOAL_ACC,1,SyncPage,28);//byte syncWrite(byte start_addr, byte num_of_data, int *param, int array_length);
+
+	return 0;
+}
+
 
 
 int Output_to_Dynamixel(int RLHand,const float *Ang_rad,const unsigned short int *velocity) 
@@ -2391,7 +2448,7 @@ int MoveToPoint(int RLHand,float Point[7],float vel_deg)  //point[x,y,z,alpha,be
 	return 0;
 }
 
-int MoveToPoint_Dual(float Point_R[7],float vel_deg_R,float Point_L[7],float vel_deg_L)
+int MoveToPoint_Dual(float Point_R[7],float Point_L[7])
 {
 	const float linkL[6]={L0,L1,L2,L3,L4,L5};
 	float base_R[3]={0,-L0,0};
@@ -2405,71 +2462,110 @@ int MoveToPoint_Dual(float Point_R[7],float vel_deg_R,float Point_L[7],float vel
 	float Rednt_alpha_rad_R=Point_R[DEF_REDNT_ALPHA]*DEF_RATIO_DEG_TO_RAD;
 	float Rednt_alpha_rad_L=Point_L[DEF_REDNT_ALPHA]*DEF_RATIO_DEG_TO_RAD;
 
-	float theta_R[7]={0};
-	float theta_L[7]={0};
-	int vel_pus_R=(int)(vel_deg_R*DEF_RATIO_VEL_DEG_TO_PUS);//vel_deg=deg/s  0.684deg/s~702deg/s
-	int vel_pus_L=(int)(vel_deg_R*DEF_RATIO_VEL_DEG_TO_PUS);
+	//float theta_R[7]={0};
+	//float theta_L[7]={0};
+
+	CStaArray theta_rad_R;
+	CStaArray theta_rad_L;
+
+	//int vel_pus_R=(int)(vel_deg_R*DEF_RATIO_VEL_DEG_TO_PUS);//vel_deg=deg/s  0.684deg/s~702deg/s
+	//int vel_pus_L=(int)(vel_deg_R*DEF_RATIO_VEL_DEG_TO_PUS);
 	int rt=0;
 	int over_index=0;
 	bool bOver=false;
 
 	//inverse kinematics right hand
-	rt= IK_7DOF_FB7roll(DEF_RIGHT_HAND,linkL,base_R,Pend_R,Pose_rad_R,Rednt_alpha_rad_R,theta_R);
+	rt= IK_7DOF_FB7roll(DEF_RIGHT_HAND,linkL,base_R,Pend_R,Pose_rad_R,Rednt_alpha_rad_R,theta_rad_R.m_arr);
 
 
 	//確認joint 使用
 #ifdef CHECK_JOINT_PATH
 	char buffer[100];
-	int n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",gstatic_abst,theta_R[Index_AXIS1]*DEF_RATIO_RAD_TO_DEG,theta_R[Index_AXIS2]*DEF_RATIO_RAD_TO_DEG,theta_R[Index_AXIS3]*DEF_RATIO_RAD_TO_DEG,theta_R[Index_AXIS4]*DEF_RATIO_RAD_TO_DEG,theta_R[Index_AXIS5]*DEF_RATIO_RAD_TO_DEG,theta_R[Index_AXIS6]*DEF_RATIO_RAD_TO_DEG,theta_R[Index_AXIS7]*DEF_RATIO_RAD_TO_DEG);
+	int n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",gstatic_abst,theta_rad_R[Index_AXIS1]*DEF_RATIO_RAD_TO_DEG,theta_rad_R[Index_AXIS2]*DEF_RATIO_RAD_TO_DEG,theta_rad_R[Index_AXIS3]*DEF_RATIO_RAD_TO_DEG,theta_rad_R[Index_AXIS4]*DEF_RATIO_RAD_TO_DEG,theta_rad_R[Index_AXIS5]*DEF_RATIO_RAD_TO_DEG,theta_rad_R[Index_AXIS6]*DEF_RATIO_RAD_TO_DEG,theta_rad_R[Index_AXIS7]*DEF_RATIO_RAD_TO_DEG);
 	gfileR.write(buffer,n);
 #endif
 	//for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
 	//{
-	//	DBGMSG(("R%d:%3.0f, ",gMapAxisNO[i],theta_R[i]*DEF_RATIO_RAD_TO_DEG))
+	//	DBGMSG(("R%d:%3.0f, ",gMapAxisNO[i],theta_rad_R[i]*DEF_RATIO_RAD_TO_DEG))
 	//}
 	//DBGMSG(("\n"))
 
 	//==prevent angle over constrain right hand 
 	over_index=0;
-	bOver=AngleOverConstrain(DEF_RIGHT_HAND,theta_R,&over_index);
+	bOver=AngleOverConstrain(DEF_RIGHT_HAND,theta_rad_R.m_arr,&over_index);
 	if(bOver)
 	{
-		DBGMSG(("axis%d=%f,over constrain, %f< axis%d < %f\n",gMapAxisNO[over_index],theta_R[over_index]*DEF_RATIO_RAD_TO_DEG,grobot_lim_rad_R_Low[over_index]*DEF_RATIO_RAD_TO_DEG,gMapAxisNO[over_index],grobot_lim_rad_R_High[over_index]*DEF_RATIO_RAD_TO_DEG))
+		DBGMSG(("axis%d=%f,over constrain, %f< axis%d < %f\n",gMapAxisNO[over_index],theta_rad_R.m_arr[over_index]*DEF_RATIO_RAD_TO_DEG,grobot_lim_rad_R_Low[over_index]*DEF_RATIO_RAD_TO_DEG,gMapAxisNO[over_index],grobot_lim_rad_R_High[over_index]*DEF_RATIO_RAD_TO_DEG))
 		return 1;
 	}
 
 	//inverse kinematics left hand
-	rt= IK_7DOF_FB7roll(DEF_LEFT_HAND,linkL,base_L,Pend_L,Pose_rad_L,Rednt_alpha_rad_L,theta_L);
+	rt= IK_7DOF_FB7roll(DEF_LEFT_HAND,linkL,base_L,Pend_L,Pose_rad_L,Rednt_alpha_rad_L,theta_rad_L.m_arr);
 	
 	//確認joint 使用
 #ifdef CHECK_JOINT_PATH
 	 buffer[100];
-	 n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",gstatic_abst,theta_L[Index_AXIS1]*DEF_RATIO_RAD_TO_DEG,theta_L[Index_AXIS2]*DEF_RATIO_RAD_TO_DEG,theta_L[Index_AXIS3]*DEF_RATIO_RAD_TO_DEG,theta_L[Index_AXIS4]*DEF_RATIO_RAD_TO_DEG,theta_L[Index_AXIS5]*DEF_RATIO_RAD_TO_DEG,theta_L[Index_AXIS6]*DEF_RATIO_RAD_TO_DEG,theta_L[Index_AXIS7]*DEF_RATIO_RAD_TO_DEG);
+	 n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",gstatic_abst,theta_rad_L[Index_AXIS1]*DEF_RATIO_RAD_TO_DEG,theta_rad_L[Index_AXIS2]*DEF_RATIO_RAD_TO_DEG,theta_rad_L[Index_AXIS3]*DEF_RATIO_RAD_TO_DEG,theta_rad_L[Index_AXIS4]*DEF_RATIO_RAD_TO_DEG,theta_rad_L[Index_AXIS5]*DEF_RATIO_RAD_TO_DEG,theta_rad_L[Index_AXIS6]*DEF_RATIO_RAD_TO_DEG,theta_rad_L[Index_AXIS7]*DEF_RATIO_RAD_TO_DEG);
 	 gfileL.write(buffer,n);
 #endif
 
 	//for(int i=Index_AXIS1;i<=Index_AXIS7;i++)
 	//{
-	//	DBGMSG(("L%d:%3.0f, ",gMapAxisNO[i],theta_L[i]*DEF_RATIO_RAD_TO_DEG))
+	//	DBGMSG(("L%d:%3.0f, ",gMapAxisNO[i],theta_rad_L[i]*DEF_RATIO_RAD_TO_DEG))
 	//}
 	//DBGMSG(("\n"))
 
 	
 	//==prevent angle over constrain left hand 
 	over_index=0;
-	bOver=AngleOverConstrain(DEF_LEFT_HAND,theta_L,&over_index);
+	bOver=AngleOverConstrain(DEF_LEFT_HAND,theta_rad_L.m_arr,&over_index);
 	if(bOver)
 	{
-		DBGMSG(("axis%d=%f,over constrain, %f< axis%d < %f\n",gMapAxisNO[over_index],theta_L[over_index]*DEF_RATIO_RAD_TO_DEG,grobot_lim_rad_L_Low[over_index]*DEF_RATIO_RAD_TO_DEG,gMapAxisNO[over_index],grobot_lim_rad_L_High[over_index]*DEF_RATIO_RAD_TO_DEG))
+		DBGMSG(("axis%d=%f,over constrain, %f< axis%d < %f\n",gMapAxisNO[over_index],theta_rad_L.m_arr[over_index]*DEF_RATIO_RAD_TO_DEG,grobot_lim_rad_L_Low[over_index]*DEF_RATIO_RAD_TO_DEG,gMapAxisNO[over_index],grobot_lim_rad_L_High[over_index]*DEF_RATIO_RAD_TO_DEG))
 		return 1;
 	}
 
+	//==calculate the velocity in joint space
+	static CStaArray last_theta_rad_R=theta_rad_R;
+	static CStaArray last_theta_rad_L=theta_rad_L;
 
-	//output to motor
-	unsigned short int velocity_R[MAX_AXIS_NUM]={vel_pus_R,vel_pus_R,vel_pus_R,vel_pus_R,vel_pus_R,vel_pus_R,vel_pus_R};
-	unsigned short int velocity_L[MAX_AXIS_NUM]={vel_pus_L,vel_pus_L,vel_pus_L,vel_pus_L,vel_pus_L,vel_pus_L,vel_pus_L};
-	
-	rt=Output_to_Dynamixel_Dual(theta_R,velocity_R,theta_L,velocity_L); 
+	const float speed_ratio=0.9;//use the speed ratio to set a speed that cannot achieve the goal before next command to prevent the shake problem
+	CStaArray vel_pus_R=(theta_rad_R-last_theta_rad_R)*DEF_RATIO_VEL_RAD_TO_PUS*(speed_ratio/gCycleT); //vel_deg=deg/s  0.684deg/s~702deg/s
+	CStaArray vel_pus_L=(theta_rad_L-last_theta_rad_L)*DEF_RATIO_VEL_RAD_TO_PUS*(speed_ratio/gCycleT);
+
+
+	last_theta_rad_R=theta_rad_R;
+	last_theta_rad_L=theta_rad_L;
+
+	//==output to motor==//
+	unsigned short int vel_pus_R_int[MAX_AXIS_NUM]={0};
+	unsigned short int vel_pus_L_int[MAX_AXIS_NUM]={0};
+
+	for(int i=Index_AXIS1;i<=Index_AXIS7;i++) 
+	{
+		vel_pus_R_int[i]=(unsigned short int)abs(vel_pus_R.m_arr[i]);
+		vel_pus_L_int[i]=(unsigned short int)abs(vel_pus_L.m_arr[i]);
+	}
+
+#ifdef CHECK_JOINT_VELOCITY
+	 char buffer[100];
+
+	 int n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",gstatic_abst,vel_pus_R_int[Index_AXIS1]*DEF_RATIO_VEL_PUS_TO_DEG,vel_pus_R_int[Index_AXIS2]*DEF_RATIO_VEL_PUS_TO_DEG,vel_pus_R_int[Index_AXIS3]*DEF_RATIO_VEL_PUS_TO_DEG,vel_pus_R_int[Index_AXIS4]*DEF_RATIO_VEL_PUS_TO_DEG,vel_pus_R_int[Index_AXIS5]*DEF_RATIO_VEL_PUS_TO_DEG,vel_pus_R_int[Index_AXIS6]*DEF_RATIO_VEL_PUS_TO_DEG,vel_pus_R_int[Index_AXIS7]*DEF_RATIO_VEL_PUS_TO_DEG);
+	 gfileR.write(buffer,n);
+
+	 n=sprintf_s(buffer,sizeof(buffer),"%4.3f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f,%4.1f\n",gstatic_abst,vel_pus_L_int[Index_AXIS1]*DEF_RATIO_VEL_PUS_TO_DEG,vel_pus_L_int[Index_AXIS2]*DEF_RATIO_VEL_PUS_TO_DEG,vel_pus_L_int[Index_AXIS3]*DEF_RATIO_VEL_PUS_TO_DEG,vel_pus_L_int[Index_AXIS4]*DEF_RATIO_VEL_PUS_TO_DEG,vel_pus_L_int[Index_AXIS5]*DEF_RATIO_VEL_PUS_TO_DEG,vel_pus_L_int[Index_AXIS6]*DEF_RATIO_VEL_PUS_TO_DEG,vel_pus_L_int[Index_AXIS7]*DEF_RATIO_VEL_PUS_TO_DEG);
+	 gfileL.write(buffer,n);
+
+#endif
+
+
+	rt=Output_to_Dynamixel_Dual(theta_rad_R.m_arr,vel_pus_R_int,theta_rad_L.m_arr,vel_pus_L_int); 
+
+	////output to motor
+	//unsigned short int velocity_R[MAX_AXIS_NUM]={vel_pus_R,vel_pus_R,vel_pus_R,vel_pus_R,vel_pus_R,vel_pus_R,vel_pus_R};
+	//unsigned short int velocity_L[MAX_AXIS_NUM]={vel_pus_L,vel_pus_L,vel_pus_L,vel_pus_L,vel_pus_L,vel_pus_L,vel_pus_L};
+	//
+	//rt=Output_to_Dynamixel_Dual(theta_R,velocity_R,theta_L,velocity_L); 
 
 	return 0;
 }
