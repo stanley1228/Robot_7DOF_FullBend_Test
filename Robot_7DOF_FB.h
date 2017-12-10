@@ -163,10 +163,14 @@ static const unsigned char gMapLAxisID[MAX_AXIS_NUM]=
 #define DEF_RATIO_PUS_TO_RAD (0.0015F)		//2pi/4096   0.00153398078788564122971808758949
 #define DEF_RATIO_DEG_TO_PUS (11.3778F)		//4096/360
 #define DEF_RATIO_DEG_TO_RAD (DEF_PI/180)		//pi/180	0.01745329251994329576923690768489 (0.0175F)
-#define DEF_RATIO_RAD_TO_DEG (180/DEF_PI)	
+#define DEF_RATIO_RAD_TO_DEG (180/DEF_PI)	//57.29578
 #define DEF_RATIO_RAD_TO_PUS (651.8986F)	//4096/2pi	651.89864690440329530934789477382
-#define DEF_RATIO_VEL_PUS_TO_DEG (0.684F)  //moving speed in register(0~1024) to deg/s
-#define DEF_RATIO_VEL_DEG_TO_PUS (1.462)
+#define DEF_RATIO_VEL_PUS_TO_DEG (0.684F)  //moving speed in register(0~1024) to deg/s 0.114rpm*360/60=0.684deg/s
+#define DEF_RATIO_VEL_DEG_TO_PUS (1.462F)  
+#define DEF_RATIO_VEL_RAD_TO_PUS (83.7664F)  //DEF_RATIO_RAD_TO_DEG x DEF_RATIO_VEL_DEG_TO_PUS =57.29578 x  1.462 =83.7664
+#define DEF_RATIO_ACC_PUS_TO_DEG (8.583) //8.583 deg/s^2 / pus
+#define DEF_RATIO_ACC_DEG_TO_PUS (0.1165) //0.1165 pus /deg/s^2   range 8.583 deg/s^2 ~ 2180 deg/s^2
+
 
 //for read pos unit select
 enum{
@@ -460,6 +464,7 @@ public:
 	void SetArray(float x,float y,float z,float alpha,float beta,float gamma,float rednt_alpha);
 
 	CStaArray operator*(float k);
+	CStaArray operator/(float k);
 	CStaArray operator+(CStaArray &other);
 	CStaArray operator-(CStaArray &other);
 };
@@ -473,10 +478,13 @@ unsigned char getMapAxisID(unsigned char index);
 int ROM_Setting_Dual();
 void PID_Setting_Dual();
 int Read_pos(int RLHand,float *pos,unsigned char unit);
+int ReadPresentLoad(int RLHand,float *LoadPercent);
 void WaitMotionDoneDual();
 void TestSewingAction();
+void MoveToInitailPoint(CStaArray &R_starP,CStaArray &L_starP);
 int TestMoveToSewingHome_Dual();
 int Torque_Disable();
+int SetAllAccTo(float deg_s2);
 void LineMoveTo(CStaArray &L_starP,CStaArray &L_endP,CStaArray &R_starP,CStaArray &R_endP,float CostTime);
 void RotateMoveTo(CStaArray &L_starP,CStaArray &L_endP,CStaArray &R_starP,CStaArray &R_endP,CStaArray &arc_cen,float rot_rad,float CostTime);
 void IKOutputToArm(CStaArray &PathPlanPoint_R,CStaArray &PathPlanPoint_L);
@@ -495,7 +503,7 @@ int IK_7DOF_nonFB(const float l1,const float l2,const float l3,const float x_bas
 int IK_7DOF_FB7roll(int RLHand,const float linkL[6],const float base[3],const float Pend[3],const float PoseAngle[3],const float Rednt_alpha,float* out_theta);
 bool AngleOverConstrain(int RLHand,const float theta[MAX_AXIS_NUM],int *OverIndex);
 int MoveToPoint(int RLHand,float Point[7],float vel_deg); //Point[x,y,z,alpha,beta,gamma,redant_alpha]
-int MoveToPoint_Dual(float Point_R[7],float vel_deg_R,float Point_L[7],float vel_deg_L);  //莱赣璶Τ硉把计
+int MoveToPoint_Dual(float Point_R[7],float Point_L[7]);  //莱赣璶Τ硉把计
 int IsMoving(int RLHand,bool *stillmoving);
 void QPDelay_ms(int t_ms);
 
