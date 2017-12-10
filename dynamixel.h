@@ -72,6 +72,7 @@ int __stdcall dxl_get_result();
 #define CCW_ANGLE_LIMIT_H	(9)
 #define MAX_TORQUE			(14)
 #define MULTITURN_OFFSET	(20)
+#define TORQUE_ENABLE		(24)
 #define ADDRESS_LED			(25)
 #define D_GAIN				(26)
 #define I_GAIN				(27)
@@ -80,8 +81,9 @@ int __stdcall dxl_get_result();
 #define GOAL_SPEED			(32)
 #define TORQUE_LIMIT		(34)
 #define PRESENT_POS			(36)
+#define PRESENT_LOAD		(40)
 #define STILL_MOVING		(46)
-
+#define GOAL_ACC			(73)
 
 
 //////////// high communication methods ///////////////////////
