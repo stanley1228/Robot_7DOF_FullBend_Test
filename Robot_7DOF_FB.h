@@ -528,15 +528,62 @@ int Gripper_LattePanda_Hold(int RLHand,bool Hold,int delay_ms);
 
 
 //F446RE IO
-#define DEF_CLOCK_WISE          true
-#define DEF_COUNTER_CLOCK_WISE  false
+//#define DEF_CLOCK_WISE          true
+//#define DEF_COUNTER_CLOCK_WISE  false
+//
+//int F446RE_Initial();
+//void F446RE_Close();
+//void F446RE_RotateMotor(bool dir,int deg);
+//void F446RE_Gripper_Hold(int RLHand,bool Hold,int delay_ms);
+//void F446RE_FootLifter(bool sw);
+//void F446RE_Spindle(bool sw);
+//void F446RE_Trimmer(bool sw);
 
-int F446RE_Initial();
-void F446RE_Close();
-void F446RE_RotateMotor(bool dir,int deg);
-void F446RE_Gripper_Hold(int RLHand,bool Hold,int delay_ms);
-void F446RE_FootLifter(bool sw);
-void F446RE_Spindle(bool sw);
-void F446RE_Trimmer(bool sw);
 
+//=================================
+//==c++ rs232 communicate to f446re
+//==================================
+#include <Windows.h>
+#include <string>
+class cF446RE
+{
+public:
+	HANDLE _hserialPort;
+	bool _continue;
+	bool _readecho;
 
+	//motor
+	static const byte DEF_IX_PARA_DIR = 0;
+	static const byte DEF_IX_PARA_DEG_HIGH = 1;
+	static const byte DEF_IX_PARA_DEG_LOW = 2;
+
+	static const byte DEF_ECHO_ROTATE_MOTOR_DONE = 3;
+
+	static const bool DEF_CLOCK_WISE = true;
+	static const bool DEF_COUNTER_CLOCK_WISE = false;
+
+	//gripper
+	//static const byte DEF_RIGHT_HAND = 1;
+	//static const byte DEF_LEFT_HAND = 2;
+
+	//====================
+	//communication struct
+	//====================
+	static const byte DEF_CMD_ROTATE_MOTOR = 0xa1;
+	static const byte DEF_CMD_GRIP = 0xa2;
+	static const byte DEF_CMD_FL = 0xa3;
+	static const byte DEF_CMD_SPINDLE = 0xa4;
+	static const byte DEF_CMD_TRIMMER = 0xa5;
+
+	cF446RE(int com, int baudrate);
+	bool initial(int com, int baudrate);
+	void close();
+	HANDLE RSLINK(unsigned long Port, unsigned long BRate);
+	DWORD ReadComm(HANDLE hRS, LPVOID lpInBuffer, DWORD dwBytesToRead);
+	BOOL WriteComm(HANDLE hRS, LPCVOID lpSndBuffer, DWORD dwBytesToWrite);
+	bool RotateMotor(bool dir, int deg);
+	void Gripper_Hold(int RLHand, bool Hold, int Delay_ms);
+	void FootLifter(bool sw);
+	void Spindle(bool sw);
+	void Trimmer(bool sw);
+};

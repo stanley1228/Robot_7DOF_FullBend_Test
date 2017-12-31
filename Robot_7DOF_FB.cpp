@@ -2911,84 +2911,295 @@ int Gripper_LattePanda_Hold(int RLHand,bool Hold,int delay_ms)
 //=========================================
 //==RoboticIO
 //=========================================
-using namespace RoboticArmIO;
-#using "RoboticArmIO.dll"
-#pragma warning (disable: 4538)
+//using namespace RoboticArmIO;
+//#using "RoboticArmIO.dll"
+//#pragma warning (disable: 4538)
+//
+//ref class F446REObj
+//{
+//public:
+//	static RobotIO ^robotio=nullptr;
+//
+//	static int Initial()
+//	{
+//		robotio = gcnew RobotIO();
+//		robotio->initial();
+//		return 0;
+//	}
+//	static int Close()
+//	{
+//		robotio->close();
+//		return 0;
+//	}
+//	static bool RotateMotor(bool dir,int deg) 
+//	{
+//		return robotio->RotateMotor(dir,deg);
+//	}
+//	static void Gripper_Hold(int RLHand,bool Hold,int delay_ms)
+//	{
+//		robotio->Gripper_Hold(RLHand,Hold,delay_ms);
+//	}
+//
+//	static void FootLifter(bool sw)
+//    {
+//       robotio->FootLifter(sw);
+//    }
+//
+//    static void Spindle(bool sw)
+//    {
+//         robotio->Spindle(sw);
+//    }
+//
+//	 static void Trimmer(bool sw)
+//    {
+//         robotio->Trimmer(sw);
+//    }
+//};
+//
+//
+//int F446RE_Initial()
+//{
+//	 F446REObj::Initial();
+//	 return 0;
+//}
+//
+//void F446RE_Close()
+//{
+//	 F446REObj::Close();
+//}
+//
+//void F446RE_RotateMotor(bool dir,int deg)
+//{
+//	 F446REObj::RotateMotor(dir,deg);
+//}
+//
+//void F446RE_Gripper_Hold(int RLHand,bool Hold,int delay_ms)
+//{
+//	 F446REObj::Gripper_Hold(RLHand,Hold,delay_ms);
+//}
+//
+//void F446RE_FootLifter(bool sw)
+//{
+//	F446REObj::FootLifter(sw);
+//}
+//
+//void F446RE_Spindle(bool sw)
+//{
+//	F446REObj::Spindle(sw);
+//}
+//
+//void F446RE_Trimmer(bool sw)
+//{
+//	F446REObj::Trimmer(sw);
+//}
 
-ref class F446REObj
+//=================================
+//==c++ rs232 communicate to f446re
+//==================================
+
+
+cF446RE::cF446RE(int com, int baudrate)
 {
-public:
-	static RobotIO ^robotio=nullptr;
+	initial(com, baudrate);
+}
 
-	static int Initial()
+bool cF446RE::initial(int com, int baudrate)
+{
+	_hserialPort = RSLINK(com, baudrate);
+
+	return 0;
+}
+
+void cF446RE::close()
+{
+	if (_hserialPort != NULL)
+		CloseHandle(_hserialPort);
+}
+
+HANDLE cF446RE::RSLINK(unsigned long Port, unsigned long BRate)
+{
+	COMMTIMEOUTS TimeOut;
+	DCB dcb;
+	//CString csPort;
+	//csPort.Format(L"COM%d:", Port);
+	std::string ss = "";
+	char sb[10];  // You had better have room for what you are sprintf()ing!
+	sprintf(sb, "COM%d", Port);
+	ss = sb;
+
+	HANDLE hRS;
+
+	hRS = CreateFile(ss.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+	if (hRS == INVALID_HANDLE_VALUE) return hRS;
+
+	GetCommTimeouts(hRS, &TimeOut);
+	TimeOut.ReadIntervalTimeout = 80;
+	TimeOut.ReadTotalTimeoutMultiplier = 80;
+	TimeOut.ReadTotalTimeoutConstant = 80;
+	TimeOut.WriteTotalTimeoutMultiplier = 80;
+	TimeOut.WriteTotalTimeoutConstant = 80;
+	SetCommTimeouts(hRS, &TimeOut);
+
+	GetCommState(hRS, &dcb);
+	dcb.BaudRate = BRate;             // Current baud
+	dcb.fBinary = TRUE;               // Binary mode; no EOF check
+	dcb.fParity = TRUE;               // Enable parity checking
+	dcb.fOutxCtsFlow = FALSE;         // No CTS output flow control
+	dcb.fOutxDsrFlow = FALSE;         // No DSR output flow control
+	dcb.fDtrControl = DTR_CONTROL_ENABLE; // DTR flow control type
+	dcb.fDsrSensitivity = FALSE;      // DSR sensitivity
+	dcb.fTXContinueOnXoff = TRUE;     // XOFF continues Tx
+	dcb.fOutX = FALSE;                // No XON/XOFF out flow control
+	dcb.fInX = FALSE;                 // No XON/XOFF in flow control
+	dcb.fErrorChar = FALSE;           // Disable error replacement
+	dcb.fNull = FALSE;                // Disable null stripping
+	dcb.fRtsControl = RTS_CONTROL_ENABLE; // RTS flow control
+	dcb.fAbortOnError = FALSE;        // Do not abort reads/writes on error
+
+	dcb.StopBits = ONESTOPBIT;        // 0,1,2=1, 1.5, 2
+	dcb.Parity = NOPARITY;            // 0-4=no,odd,even,mark,space
+	dcb.ByteSize = 8;                 // Number of bits/byte, 4-8
+
+	SetCommState(hRS, &dcb);  // resetting default config 
+
+							  //SetupComm(hRS,BRate,BRate);
+
+							  //WriteFile(hRS,send,len,&dwWrite,0);
+							  //ReadFile(hRS, &Get, 1, &dwRead, 0);
+							  //FlushFileBuffers(hRS);
+	return hRS;
+}
+
+DWORD cF446RE::ReadComm(HANDLE hRS, LPVOID lpInBuffer, DWORD dwBytesToRead)
+{
+	//lpInBuffer為接收數據的緩衝區指針，dwBytesToRead為準備讀取的數據長度（字節數） 
+	//串行設備狀態結構 
+	DWORD dwBytesRead;//,dwErrorFlags;  
+					  //設備未打開 
+					  ////if(!bOpen) return 0; 
+	if (hRS == INVALID_HANDLE_VALUE) return false;
+	//讀取串行設備的當前狀態 
+	//ClearCommError(hRS,&dwErrorFlags,&ComStat); 
+	//應該讀取的數據長度 
+	//dwBytesRead=min(dwBytesToRead,ComStat.cbInQue); 
+	dwBytesRead = dwBytesToRead;
+	if (dwBytesRead>0)
+		//讀取數據 
+		if (!ReadFile(hRS, lpInBuffer, dwBytesRead, &dwBytesRead, NULL)) dwBytesRead = 0;
+	return dwBytesRead;
+}
+
+BOOL cF446RE::WriteComm(HANDLE hRS, LPCVOID lpSndBuffer, DWORD dwBytesToWrite)
+{
+	//lpSndBuffer為發送數據緩衝區指針，dwBytesToWrite為將要發送的字節長度 
+	//設備已打開 
+	BOOL bWriteState;
+	//實際發送的字節數 
+	DWORD dwBytesWritten;
+	//設備未打開 
+	if (hRS == INVALID_HANDLE_VALUE) return false;
+	////if(!bOpen) return FALSE; 
+	bWriteState = WriteFile(hRS, lpSndBuffer, dwBytesToWrite, &dwBytesWritten, NULL);
+	if (!bWriteState || dwBytesToWrite != dwBytesWritten) return FALSE; //發送失敗 	
+	else return TRUE; //發送成功 
+}
+
+bool cF446RE::RotateMotor(bool dir, int deg)
+{
+	//construct parameter
+	byte dir_para = 0;
+	if (dir == DEF_CLOCK_WISE)
+		dir_para = 0x01;
+	else
+		dir_para = 0x00;
+
+	byte Data[4] = { DEF_CMD_ROTATE_MOTOR, dir_para, (byte)(deg >> 8), (byte)(deg & 0xff) };
+
+	if (_hserialPort != NULL)
+		WriteComm(_hserialPort, Data, 4);
+
+
+	_readecho = false; //wait for echo
+	int readbyte = 0;
+	byte ReadData;
+
+	int count = 200;
+	while (_readecho == false)
 	{
-		robotio = gcnew RobotIO();
-		robotio->initial();
-		return 0;
-	}
-	static int Close()
-	{
-		robotio->close();
-		return 0;
-	}
-	static bool RotateMotor(bool dir,int deg) 
-	{
-		return robotio->RotateMotor(dir,deg);
-	}
-	static void Gripper_Hold(int RLHand,bool Hold,int delay_ms)
-	{
-		robotio->Gripper_Hold(RLHand,Hold,delay_ms);
+		count--;
+		Sleep(1000);//ms
+
+		readbyte = ReadComm(_hserialPort, &ReadData, sizeof(ReadData));
+		if (readbyte != 0)
+			_readecho = true;
+
+		if (count == 0)
+			break;
 	}
 
-	static void FootLifter(bool sw)
-    {
-       robotio->FootLifter(sw);
-    }
-
-    static void Spindle(bool sw)
-    {
-         robotio->Spindle(sw);
-    }
-
-	 static void Trimmer(bool sw)
-    {
-         robotio->Trimmer(sw);
-    }
-};
-
-
-int F446RE_Initial()
-{
-	 F446REObj::Initial();
-	 return 0;
+	return _readecho;
 }
 
-void F446RE_Close()
+void cF446RE::Gripper_Hold(int RLHand, bool Hold, int Delay_ms)
 {
-	 F446REObj::Close();
+	byte lr = 0;
+	byte hold = 0;
+
+
+	if (RLHand == DEF_RIGHT_HAND)
+		lr = 1;
+	else
+		lr = 2;
+
+	if (Hold == true)
+		hold = 1;
+	else
+		hold = 0;
+
+	byte Data[5] = { DEF_CMD_GRIP,lr,hold,(byte)(Delay_ms >> 8), (byte)(Delay_ms & 0xff) };
+
+	if (_hserialPort != NULL)
+		WriteComm(_hserialPort, Data, 5);
 }
 
-void F446RE_RotateMotor(bool dir,int deg)
+void cF446RE::FootLifter(bool sw)
 {
-	 F446REObj::RotateMotor(dir,deg);
+	byte onoff = 0;
+	if (sw == true)
+		onoff = 1;
+	else
+		onoff = 0;
+
+	byte Data[2] = { DEF_CMD_FL, onoff };
+
+	if (_hserialPort != NULL)
+		WriteComm(_hserialPort, Data, 2);
+
 }
 
-void F446RE_Gripper_Hold(int RLHand,bool Hold,int delay_ms)
+void cF446RE::Spindle(bool sw)
 {
-	 F446REObj::Gripper_Hold(RLHand,Hold,delay_ms);
+	byte onoff = 0;
+	if (sw == true)
+		onoff = 1;
+	else
+		onoff = 0;
+
+	byte Data[2] = { DEF_CMD_SPINDLE, onoff };
+
+	if (_hserialPort != NULL)
+		WriteComm(_hserialPort, Data, 2);
 }
 
-void F446RE_FootLifter(bool sw)
+void cF446RE::Trimmer(bool sw)
 {
-	F446REObj::FootLifter(sw);
-}
+	byte onoff = 0;
+	if (sw == true)
+		onoff = 1;
+	else
+		onoff = 0;
 
-void F446RE_Spindle(bool sw)
-{
-	F446REObj::Spindle(sw);
-}
+	byte Data[2] = { DEF_CMD_TRIMMER, onoff };
 
-void F446RE_Trimmer(bool sw)
-{
-	F446REObj::Trimmer(sw);
+	WriteComm(_hserialPort, Data, 2);
 }
